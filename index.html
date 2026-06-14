@@ -526,11 +526,13 @@
       getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
       onSnapshot, collection, getDocs, runTransaction
     } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-messaging.js";
 
     window.FirebaseLib = {
       initializeApp, getAuth, signInAnonymously, onAuthStateChanged,
       getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
-      onSnapshot, collection, getDocs, runTransaction
+      onSnapshot, collection, getDocs, runTransaction,
+      getMessaging, getToken,
     };
   </script>
 
@@ -769,7 +771,7 @@
     // ⑥ CLOUD_SYNC_MANAGER — Firestore real-time sync with borrow transaction
     // ─────────────────────────────────────────────────────────────────────────
     const CLOUD_SYNC_MANAGER = (() => {
-      let _fs = null, _auth = null, _unsub = null;
+      let _fs = null, _auth = null, _unsub = null, _messaging = null;
       let _active = false;
       let _appId = 'a-class-radiosync';
       let _prevEquipment = null;
@@ -791,10 +793,11 @@
       async function _initFirebase(config) {
         if (!window.FirebaseLib) return false;
         try {
-          const { initializeApp, getAuth, signInAnonymously, getFirestore } = window.FirebaseLib;
+          const { initializeApp, getAuth, signInAnonymously, getFirestore, getMessaging } = window.FirebaseLib;
           const app = initializeApp(config);
-          _fs   = getFirestore(app);
-          _auth = getAuth(app);
+          _fs        = getFirestore(app);
+          _auth      = getAuth(app);
+          _messaging = getMessaging(app);
           await signInAnonymously(_auth);
           _active = true;
           STATE_STORE.set('syncStatus', 'online');
@@ -832,6 +835,25 @@
           if (!config) { STATE_STORE.set('syncStatus', 'local'); return; }
           const ok = await _initFirebase(config);
           if (ok) this.startListening();
+        },
+
+        async registerAdminToken() {
+          if (!_active || !_fs || !_messaging) return;
+          if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+          if (!('serviceWorker' in navigator)) return;
+          try {
+            const { getToken, setDoc } = window.FirebaseLib;
+            const sw    = await navigator.serviceWorker.ready;
+            const token = await getToken(_messaging, {
+              vapidKey: 'BOM5xXWnw0oy1-oRpa3W1GZg2XZZC1uruR-DdnOFmG8cqlloeuX6igN8qitG9KXigs7ndpk_U2LsYsB2w9G0JVc',
+              serviceWorkerRegistration: sw,
+            });
+            if (!token) return;
+            const tokenId = token.slice(-28).replace(/[^a-zA-Z0-9]/g, '_');
+            await setDoc(_docRef('adminTokens', tokenId), { token, createdAt: Date.now() });
+          } catch(e) {
+            console.warn('FCM token registration failed', e);
+          }
         },
 
         startListening() {
@@ -1589,6 +1611,8 @@
             SESSION_MANAGER.reset();
             UI_RENDERER.showToast('🔓 เข้าสู่ระบบแอดมินสำเร็จแล้วค่ะ', 'success');
             UI_RENDERER.render();
+            // Refresh FCM token on every admin login
+            CLOUD_SYNC_MANAGER.registerAdminToken().catch(() => {});
           } else if (result.locked) {
             UI_RENDERER.showLockout(result.remainingMs);
             UI_RENDERER.showToast('🔒 ป้อน PIN ผิดหลายครั้ง: ระบบล็อกชั่วคราวค่ะ', 'error');
@@ -1719,6 +1743,7 @@
           const result = await Notification.requestPermission();
           if (result === 'granted') {
             UI_RENDERER.render();
+            await CLOUD_SYNC_MANAGER.registerAdminToken();
             const _testOpts = { body: 'เปิดการแจ้งเตือนสำเร็จแล้วค่ะ ✅', icon: './icon-192.png', badge: './icon-192.png' };
             if (navigator.serviceWorker && navigator.serviceWorker.controller) {
               navigator.serviceWorker.ready.then(reg => reg.showNotification('RadioSync', _testOpts)).catch(() => {});

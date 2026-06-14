@@ -23,6 +23,13 @@ service cloud.firestore {
       allow create: if request.auth != null && collection == 'logs'
                     && request.resource.data.keys().hasAll(['id', 'equipId', 'empId', 'action', 'timestamp']);
       allow update, delete: if false;
+
+      // Admin FCM tokens — write by any authenticated client, read by Cloud Functions (admin SDK bypasses rules)
+      allow create, update: if request.auth != null
+                            && collection == 'adminTokens'
+                            && request.resource.data.keys().hasAll(['token', 'createdAt'])
+                            && request.resource.data.token is string;
+      allow delete: if request.auth != null && collection == 'adminTokens';
     }
 
     // Block all other paths

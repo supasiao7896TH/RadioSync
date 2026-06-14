@@ -1,6 +1,51 @@
 'use strict';
 
-const CACHE_NAME = 'radiosync-v3';
+// Firebase Messaging compat — required for background FCM push delivery
+importScripts('https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/11.0.1/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey:            'AIzaSyBr56MeNH5Md7Xan0bBXu1HzbErWTPKbro',
+  authDomain:        'radiosync-6662c.firebaseapp.com',
+  projectId:         'radiosync-6662c',
+  storageBucket:     'radiosync-6662c.firebasestorage.app',
+  messagingSenderId: '605359206228',
+  appId:             '1:605359206228:web:bfbc3514675887d666e2c1',
+});
+
+const _fcm = firebase.messaging();
+
+// Handle FCM push when app is in background / closed
+_fcm.onBackgroundMessage(payload => {
+  const title = payload.notification?.title || 'RadioSync';
+  const body  = payload.notification?.body  || '';
+  self.registration.showNotification(title, {
+    body,
+    icon:  './icon-192.png',
+    badge: './icon-192.png',
+    tag:   'radiosync-push',
+    renotify: true,
+    data: { url: 'https://supasiao7896th.github.io/RadioSync/' },
+  });
+});
+
+// Open / focus the app when admin taps the notification
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = event.notification.data?.url || 'https://supasiao7896th.github.io/RadioSync/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if (c.url.includes('RadioSync') && 'focus' in c) return c.focus();
+      }
+      return clients.openWindow(url);
+    })
+  );
+});
+
+// ─── App-shell cache ──────────────────────────────────────────────────────────
+
+const CACHE_NAME   = 'radiosync-v4';
 const STATIC_ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -28,7 +73,8 @@ self.addEventListener('fetch', (e) => {
     url.hostname.includes('gstatic.com') ||
     url.hostname.includes('googleapis.com') ||
     url.hostname.includes('unpkg.com') ||
-    url.hostname.includes('fonts.gstatic.com')
+    url.hostname.includes('fonts.gstatic.com') ||
+    url.hostname.includes('jsdelivr.net')
   ) {
     e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
     return;

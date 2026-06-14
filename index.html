@@ -776,9 +776,15 @@
 
       function _notifyAdmin(title, body) {
         if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-        try {
-          new Notification(title, { body, icon: './icon-192.png', tag: `rs-${Date.now()}` });
-        } catch(e) { console.warn('Notification failed', e); }
+        const opts = { body, icon: './icon-192.png', badge: './icon-192.png', tag: `rs-${Date.now()}`, renotify: true };
+        // Use SW showNotification for background/mobile support; fallback to Notification API
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.ready
+            .then(reg => reg.showNotification(title, opts))
+            .catch(() => { try { new Notification(title, opts); } catch(e) {} });
+        } else {
+          try { new Notification(title, opts); } catch(e) { console.warn('Notification failed', e); }
+        }
       }
       try { if (typeof __app_id !== 'undefined') _appId = __app_id; } catch(e) {}
 
@@ -1713,7 +1719,12 @@
           const result = await Notification.requestPermission();
           if (result === 'granted') {
             UI_RENDERER.render();
-            new Notification('RadioSync', { body: 'เปิดการแจ้งเตือนสำเร็จแล้วค่ะ ✅', icon: './icon-192.png' });
+            const _testOpts = { body: 'เปิดการแจ้งเตือนสำเร็จแล้วค่ะ ✅', icon: './icon-192.png', badge: './icon-192.png' };
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+              navigator.serviceWorker.ready.then(reg => reg.showNotification('RadioSync', _testOpts)).catch(() => {});
+            } else {
+              try { new Notification('RadioSync', _testOpts); } catch(e) {}
+            }
             UI_RENDERER.showToast('✅ เปิดการแจ้งเตือนสำเร็จแล้วค่ะ', 'success');
           } else {
             UI_RENDERER.showToast('การแจ้งเตือนถูกปฏิเสธค่ะ', 'error');

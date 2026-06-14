@@ -16,7 +16,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind Play CDN (dev/preview). For production: run `npx tailwindcss build` and inline the output. -->
+  <script>window._TWarn = console.warn; console.warn = (...a) => { if (String(a[0]).includes('cdn.tailwindcss.com')) return; _TWarn(...a); };</script>
+  <script src="https://cdn.tailwindcss.com" onload="console.warn=window._TWarn"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -45,7 +47,8 @@
     }
   </script>
 
-  <script src="https://unpkg.com/lucide@0.447.0"></script>
+  <!-- jsDelivr bundles source maps, eliminating the 404 from unpkg -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.447.0/dist/umd/lucide.min.js"></script>
 
   <style>
     body, p, span, h1, h2, h3, h4 { word-break: break-word; overflow-wrap: anywhere; }
@@ -1286,11 +1289,12 @@
 
       return {
         async init() {
-          // Register service worker
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').catch(e =>
-              console.warn('SW registration failed', e)
-            );
+          // Service Worker requires http/https — skip silently when opened as file://
+          const _swSupported = 'serviceWorker' in navigator &&
+            (location.protocol === 'https:' || location.protocol === 'http:');
+          if (_swSupported) {
+            navigator.serviceWorker.register('./sw.js')
+              .catch(e => console.warn('SW registration failed:', e.message));
           }
 
           await PIN_GUARD.ensureDefaultPin();

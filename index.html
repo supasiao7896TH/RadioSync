@@ -148,8 +148,15 @@
           <p class="text-[10px] text-brand-light tracking-widest uppercase font-semibold">Radio Available</p>
           <h2 class="font-display font-medium text-xl text-white">เลือกยืมวิทยุสื่อสาร</h2>
         </div>
-        <div id="equip-count-badge" class="bg-surface-raised px-3 py-1 rounded-full text-xs text-gray-300 font-medium border border-white/5">
-          ว่าง -- เครื่อง
+        <div class="flex items-center gap-2">
+          <div id="equip-count-badge" class="bg-surface-raised px-3 py-1 rounded-full text-xs text-gray-300 font-medium border border-white/5">
+            ว่าง -- เครื่อง
+          </div>
+          <button onclick="document.getElementById('help-modal').classList.remove('invisible','opacity-0'); document.getElementById('help-modal').classList.add('opacity-100')"
+            class="w-8 h-8 rounded-full bg-brand/10 border border-brand/30 flex items-center justify-center text-brand-light hover:bg-brand/20 transition btn-active"
+            title="คู่มือการยืมวิทยุ">
+            <i data-lucide="book-open" class="w-4 h-4"></i>
+          </button>
         </div>
       </div>
       <div class="relative">
@@ -493,6 +500,99 @@
 
   <!-- TOAST -->
   <div id="toast-container" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-xs px-4 pointer-events-none"></div>
+
+  <!-- HELP MODAL -->
+  <div id="help-modal" class="fixed inset-0 z-50 invisible opacity-0 transition-opacity duration-200 flex items-end justify-center">
+    <div onclick="document.getElementById('help-modal').classList.add('invisible','opacity-0')" class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+    <div class="relative glass bg-surface-card rounded-t-2xl rounded-b-none border-b-0 max-w-md mx-auto w-full max-h-[88vh] overflow-y-auto px-6 py-6 space-y-5">
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center">
+            <i data-lucide="book-open" class="w-4 h-4 text-brand-light"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-medium text-lg text-white">คู่มือการยืม-คืนวิทยุ</h3>
+            <p class="text-[10px] text-brand-light font-semibold uppercase">How To Borrow &amp; Return</p>
+          </div>
+        </div>
+        <button onclick="document.getElementById('help-modal').classList.add('invisible','opacity-0')" class="p-1.5 hover:bg-white/5 rounded-full transition btn-active">
+          <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+        </button>
+      </div>
+
+      <!-- Steps: Borrow -->
+      <div class="space-y-3">
+        <p class="text-[10px] text-brand-light tracking-widest uppercase font-semibold">ขั้นตอนการยืมวิทยุ</p>
+
+        <div class="flex gap-3 items-start">
+          <div class="w-7 h-7 rounded-full bg-brand flex items-center justify-center shrink-0 text-xs font-bold text-white">1</div>
+          <div>
+            <p class="text-sm font-semibold text-white">เลือกเครื่องที่ว่าง</p>
+            <p class="text-xs text-gray-400 mt-0.5">แตะที่การ์ดวิทยุที่มีสถานะ <span class="text-green-400 font-medium">🟢 ว่าง</span> เพื่อเปิดแบบฟอร์มยืม</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3 items-start">
+          <div class="w-7 h-7 rounded-full bg-brand flex items-center justify-center shrink-0 text-xs font-bold text-white">2</div>
+          <div>
+            <p class="text-sm font-semibold text-white">กรอกรหัสพนักงานและชื่อ</p>
+            <p class="text-xs text-gray-400 mt-0.5">กรอกรหัสพนักงาน และชื่อ-นามสกุลของคุณให้ครบถ้วน</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3 items-start">
+          <div class="w-7 h-7 rounded-full bg-brand flex items-center justify-center shrink-0 text-xs font-bold text-white">3</div>
+          <div>
+            <p class="text-sm font-semibold text-white">กด "ลงทะเบียนขอยืม"</p>
+            <p class="text-xs text-gray-400 mt-0.5">ระบบจะบันทึกข้อมูลทันที วิทยุจะเปลี่ยนสถานะเป็น <span class="text-red-400 font-medium">🔴 ถูกยืม</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="border-t border-white/5"></div>
+
+      <!-- Steps: Return -->
+      <div class="space-y-3">
+        <p class="text-[10px] text-amber-400 tracking-widest uppercase font-semibold">ขั้นตอนการคืนวิทยุ</p>
+
+        <div class="flex gap-3 items-start">
+          <div class="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center shrink-0 text-xs font-bold text-white">1</div>
+          <div>
+            <p class="text-sm font-semibold text-white">ไปที่แท็บ "สถานะของฉัน"</p>
+            <p class="text-xs text-gray-400 mt-0.5">ดูรายการวิทยุที่คุณกำลังถือครองอยู่</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3 items-start">
+          <div class="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center shrink-0 text-xs font-bold text-white">2</div>
+          <div>
+            <p class="text-sm font-semibold text-white">กด "แจ้งคืน"</p>
+            <p class="text-xs text-gray-400 mt-0.5">วิทยุจะเปลี่ยนเป็นสถานะ <span class="text-amber-400 font-medium">🟡 รอตรวจรับ</span> และแจ้ง Admin โดยอัตโนมัติ</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3 items-start">
+          <div class="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center shrink-0 text-xs font-bold text-white">3</div>
+          <div>
+            <p class="text-sm font-semibold text-white">Admin ยืนยันรับคืน</p>
+            <p class="text-xs text-gray-400 mt-0.5">เมื่อ Admin กดยืนยัน วิทยุจะกลับสู่สถานะ <span class="text-green-400 font-medium">🟢 ว่าง</span> พร้อมให้ยืมใหม่</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Note -->
+      <div class="bg-surface-raised border border-white/5 rounded-xl p-4 flex gap-3 items-start">
+        <i data-lucide="info" class="w-4 h-4 text-brand-light shrink-0 mt-0.5"></i>
+        <p class="text-xs text-gray-400 leading-relaxed">ข้อมูลการยืม-คืนจะถูกบันทึกและซิงค์แบบ Real-time ทุกอุปกรณ์ ไม่ต้องรีเฟรชหน้า</p>
+      </div>
+
+      <button onclick="document.getElementById('help-modal').classList.add('invisible','opacity-0')" class="w-full bg-brand hover:bg-brand-dark text-white font-medium text-sm py-3 rounded-xl transition duration-220 btn-active">
+        เข้าใจแล้ว
+      </button>
+    </div>
+  </div>
 
   <!-- BOTTOM NAV -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-surface-page/90 backdrop-blur-md border-t border-white/[0.08]">

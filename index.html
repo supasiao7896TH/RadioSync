@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="th" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>A-Class RadioSync | ระบบยืม-คืนวิทยุและอุปกรณ์อัจฉริยะ</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Sarabun', 'sans-serif'],
+            display: ['Fraunces', 'serif'],
+          },
+          colors: {
+            brand: {
+              DEFAULT: '#7c3aed',
+              light: '#a78bfa',
+              dark: '#5b21b6',
+              glow: 'rgba(124, 58, 237, 0.15)'
+            },
+            surface: {
+              page: '#0f0f12',
+              card: '#18181c',
+              raised: '#22222a',
+              overlay: '#2d2d38'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <script src="https://unpkg.com/lucide@0.447.0"></script>
+
+  <style>
+    body, p, span, h1, h2, h3, h4 { word-break: break-word; overflow-wrap: anywhere; }
+    p, li { line-height: 1.75; }
+
+    .glass {
+      background: rgba(24, 24, 28, 0.75);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(255, 255, 255, 0.05);
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f0f12; }
+    ::-webkit-scrollbar-thumb { background: #2d2d38; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
+
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.6; }
+    }
+    .pulse-green { animation: pulse-glow 2s infinite ease-in-out; filter: drop-shadow(0 0 4px #10b981); }
+    .pulse-amber { animation: pulse-glow 2s infinite ease-in-out; filter: drop-shadow(0 0 4px #f59e0b); }
+    .pulse-blue  { animation: pulse-glow 2s infinite ease-in-out; filter: drop-shadow(0 0 4px #3b82f6); }
+    .pulse-red   { animation: pulse-glow 2s infinite ease-in-out; filter: drop-shadow(0 0 4px #ef4444); }
+
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg,
+        rgba(255,255,255,.03) 25%,
+        rgba(255,255,255,.10) 37%,
+        rgba(255,255,255,.03) 63%);
+      background-size: 400% 100%;
+      animation: shimmer 1.5s ease infinite;
+    }
+
+    .btn-active:active { transform: scale(0.97); }
+  </style>
+</head>
+
+<body class="bg-surface-page text-gray-100 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- Top Sticky Glass Header -->
+  <header class="sticky top-0 z-40 w-full glass rounded-none border-t-0 border-x-0 bg-surface-page/80">
+    <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center border border-brand/40">
+          <i data-lucide="radio" class="w-5 h-5 text-brand-light"></i>
+        </div>
+        <div>
+          <h1 class="font-display font-semibold text-lg tracking-tight leading-none text-white">RadioSync</h1>
+          <span class="text-[10px] text-gray-400 tracking-wider uppercase font-medium">A-Class WebCraft</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="sync-glow" class="w-2.5 h-2.5 rounded-full bg-amber-500 pulse-amber" title="สถานะการเชื่อมต่อ"></span>
+        <span id="sync-text" class="text-xs text-gray-400 font-medium">เซฟในเครื่อง</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Offline Banner -->
+  <div id="offline-banner" class="hidden bg-amber-500/10 border-b border-amber-500/20 text-amber-200 text-xs text-center py-2 px-4 transition-all duration-300">
+    <div class="max-w-md mx-auto flex items-center justify-center gap-2">
+      <i data-lucide="wifi-off" class="w-3.5 h-3.5"></i>
+      <span>ออฟไลน์ชั่วคราว: กำลังบันทึกข้อมูลไว้ในเครื่องอย่างปลอดภัย</span>
+    </div>
+  </div>
+
+  <main class="flex-1 w-full max-w-md mx-auto px-4 py-6 pb-28 flex flex-col gap-6">
+
+    <!-- Active User Card -->
+    <div id="active-user-container" class="hidden bg-brand/10 border border-brand/30 rounded-xl p-4 flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center">
+          <i data-lucide="user" class="w-4 h-4 text-brand-light"></i>
+        </div>
+        <div>
+          <p class="text-xs text-brand-light font-medium">ผู้ลงทะเบียนใช้งาน</p>
+          <p id="active-user-name" class="text-sm font-semibold text-white">-</p>
+        </div>
+      </div>
+      <button onclick="STATE_STORE.logout()" class="p-1.5 hover:bg-white/5 text-gray-400 hover:text-red-400 rounded-lg transition btn-active" title="เปลี่ยนผู้ใช้งาน">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- TAB 1: BORROW -->
+    <section id="tab-borrow-content" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-[10px] text-brand-light tracking-widest uppercase font-semibold">Radio Available</p>
+          <h2 class="font-display font-medium text-xl text-white">เลือกยืมวิทยุสื่อสาร</h2>
+        </div>
+        <div id="equip-count-badge" class="bg-surface-raised px-3 py-1 rounded-full text-xs text-gray-300 font-medium border border-white/5">
+          ว่าง -- เครื่อง
+        </div>
+      </div>
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+          <i data-lucide="search" class="w-4 h-4 text-gray-500"></i>
+        </div>
+        <input type="text" id="search-input" placeholder="ค้นหาเลขวิทยุ หรือชื่อเครื่อง..."
+          class="w-full bg-surface-card border border-white/10 hover:border-white/20 focus:border-brand rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-glow transition duration-220" />
+        <button id="clear-search-btn" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center">
+          <i data-lucide="x" class="w-4 h-4 text-gray-500 hover:text-gray-300"></i>
+        </button>
+      </div>
+      <div id="equipment-list" class="grid grid-cols-1 gap-3">
+        <div class="skeleton h-24 rounded-xl"></div>
+        <div class="skeleton h-24 rounded-xl"></div>
+        <div class="skeleton h-24 rounded-xl"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: MY STATUS -->
+    <section id="tab-status-content" class="hidden space-y-4">
+      <div>
+        <p class="text-[10px] text-brand-light tracking-widest uppercase font-semibold">User Dashboard</p>
+        <h2 class="font-display font-medium text-xl text-white">สถานะการยืมของฉัน</h2>
+      </div>
+      <div id="status-not-logged-in" class="glass p-6 text-center space-y-4">
+        <div class="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center mx-auto">
+          <i data-lucide="user-check" class="w-6 h-6 text-brand-light"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-white">โปรดลงทะเบียนพนักงานเพื่อดูประวัติ</h3>
+          <p class="text-xs text-gray-400 mt-1">กรอกชื่อและรหัสของคุณในแท็บยืมของเพื่อสร้างโปรไฟล์ก่อนนะคะ</p>
+        </div>
+      </div>
+      <div id="status-dashboard" class="hidden space-y-4">
+        <div class="space-y-3">
+          <h3 class="text-xs text-gray-400 font-semibold uppercase tracking-wider">วิทยุที่กำลังถือครองอยู่</h3>
+          <div id="my-active-borrowed-list" class="space-y-3"></div>
+        </div>
+        <div class="space-y-3 pt-4 border-t border-white/5">
+          <h3 class="text-xs text-gray-400 font-semibold uppercase tracking-wider">อยู่ระหว่างให้ Admin ตรวจรับคืน</h3>
+          <div id="my-pending-returns-list" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: ADMIN -->
+    <section id="tab-admin-content" class="hidden space-y-4">
+      <div>
+        <p class="text-[10px] text-brand-light tracking-widest uppercase font-semibold">Control Room</p>
+        <h2 class="font-display font-medium text-xl text-white">แผงควบคุมแอดมิน</h2>
+      </div>
+
+      <!-- Admin Lock Screen -->
+      <div id="admin-lock-screen" class="glass p-6 space-y-4 text-center">
+        <div class="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center mx-auto border border-brand/30">
+          <i data-lucide="shield-check" class="w-6 h-6 text-brand-light"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-white text-center">ระบบความปลอดภัย</h3>
+          <p class="text-xs text-gray-400 mt-1">กรุณากรอกรหัส PIN แอดมิน 4 หลักเพื่อเข้าถึงระบบ</p>
+        </div>
+
+        <!-- Lockout message (hidden by default) -->
+        <div id="admin-lockout-msg" class="hidden py-2 px-3 bg-red-500/10 rounded-lg border border-red-500/20">
+          <p class="text-xs text-red-400">🔒 ระบบล็อกชั่วคราว รอ <span id="admin-lockout-countdown" class="font-bold tabular-nums">5:00</span></p>
+        </div>
+
+        <!-- Remaining attempts warning (hidden by default) -->
+        <div id="admin-attempts-msg" class="hidden">
+          <p class="text-xs text-amber-400">⚠️ เหลืออีก <span id="admin-attempts-left" class="font-bold">5</span> ครั้ง ก่อนถูกล็อก</p>
+        </div>
+
+        <div class="max-w-[200px] mx-auto">
+          <input type="password" id="admin-pin-input" maxlength="4" placeholder="● ● ● ●"
+            class="w-full text-center tracking-widest bg-surface-raised border border-white/10 hover:border-white/20 focus:border-brand rounded-xl py-2.5 text-lg font-semibold text-white focus:outline-none transition"
+            onkeydown="if(event.key==='Enter') APP_CORE.verifyAdminPin()" />
+        </div>
+        <button onclick="APP_CORE.verifyAdminPin()" class="w-full bg-brand hover:bg-brand-dark text-white font-medium text-sm py-2.5 rounded-xl transition duration-220 btn-active">
+          เข้าสู่ระบบแอดมิน
+        </button>
+      </div>
+
+      <!-- Admin Authorized Console -->
+      <div id="admin-authorized-console" class="hidden space-y-6">
+
+        <!-- Session timer bar -->
+        <div class="flex items-center justify-between px-1">
+          <span class="text-[10px] text-gray-500 flex items-center gap-1">
+            <i data-lucide="clock" class="w-3 h-3"></i>
+            หมดเวลาเซสชันใน <span id="session-countdown" class="text-gray-400 font-medium tabular-nums ml-1">15:00</span>
+          </span>
+          <button onclick="SESSION_MANAGER.reset()" class="text-[10px] text-brand-light hover:underline">รีเซ็ตเวลา</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-surface-card border border-white/5 rounded-xl p-4 flex flex-col justify-between h-24">
+            <span class="text-xs text-gray-400 font-medium">อุปกรณ์ทั้งหมด</span>
+            <span id="admin-stat-total" class="font-display text-2xl font-bold text-white">0</span>
+          </div>
+          <div class="bg-surface-card border border-white/5 rounded-xl p-4 flex flex-col justify-between h-24">
+            <span class="text-xs text-gray-400 font-medium">ยืมอยู่ / รอยืนยัน</span>
+            <span id="admin-stat-borrowed" class="font-display text-2xl font-bold text-brand-light">0</span>
+          </div>
+        </div>
+
+        <!-- 1. Pending Approvals -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+            รายการรออนุมัติรับคืน
+          </h3>
+          <div id="admin-approval-list" class="space-y-3">
+            <div class="text-center py-6 text-xs text-gray-500 glass">
+              ไม่มีอุปกรณ์รอการตรวจรับคืนในขณะนี้
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Add Equipment -->
+        <div class="bg-surface-card border border-white/5 rounded-xl p-4 space-y-4">
+          <h3 class="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-brand-light"></i>
+            เพิ่มอุปกรณ์วิทยุใหม่
+          </h3>
+          <div class="grid grid-cols-1 gap-3">
+            <div>
+              <label for="new-equip-name" class="block text-[11px] text-gray-400 uppercase font-medium mb-1">ชื่อเครื่องย่อ</label>
+              <input type="text" id="new-equip-name" placeholder="Radio No.XX"
+                class="w-full bg-surface-raised border border-white/10 hover:border-white/20 focus:border-brand rounded-lg px-3 py-2 text-xs text-white focus:outline-none transition">
+            </div>
+            <div>
+              <label for="new-equip-serial" class="block text-[11px] text-gray-400 uppercase font-medium mb-1">หมายเลขเฉพาะเครื่อง (Serial / ID)</label>
+              <input type="text" id="new-equip-serial" placeholder="400105"
+                class="w-full bg-surface-raised border border-white/10 hover:border-white/20 focus:border-brand rounded-lg px-3 py-2 text-xs text-white focus:outline-none transition">
+            </div>
+          </div>
+          <button onclick="APP_CORE.addEquipmentFromAdmin()" class="w-full bg-brand/20 hover:bg-brand/30 text-brand-light font-medium text-xs py-2.5 rounded-lg border border-brand/30 transition btn-active">
+            ➕ เพิ่มอุปกรณ์ใหม่เข้าสู่ระบบ
+          </button>
+        </div>
+
+        <!-- 3. Inventory List -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="package" class="w-3.5 h-3.5"></i>
+            คลังอุปกรณ์ทั้งหมด
+          </h3>
+          <div id="admin-inventory-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- 4. CSV Export -->
+        <div class="bg-surface-card border border-white/5 rounded-xl p-4 space-y-3">
+          <h3 class="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-green-400"></i>
+            รายงานประวัติส่งต่อ Microsoft Office 365
+          </h3>
+          <p class="text-xs text-gray-400 leading-relaxed">ดาวน์โหลดประวัติการยืม-คืนทั้งหมดเป็นไฟล์ Excel (CSV)</p>
+          <div class="flex gap-2">
+            <button onclick="APP_CORE.exportHistoryCSV()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium text-xs py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition btn-active">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              ดาวน์โหลดประวัติทั้งหมด (Excel)
+            </button>
+            <button onclick="APP_CORE.clearLocalLogs()" class="px-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-xs transition btn-active" title="ล้างประวัติเครื่องทั้งหมด">
+              ล้างประวัติ
+            </button>
+          </div>
+        </div>
+
+        <!-- 5. Change PIN -->
+        <div class="bg-surface-card border border-white/5 rounded-xl p-4 space-y-3">
+          <h3 class="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="key" class="w-4 h-4 text-amber-400"></i>
+            เปลี่ยนรหัส PIN แอดมิน
+          </h3>
+          <div class="space-y-2">
+            <input type="password" id="change-pin-current" maxlength="4" placeholder="รหัส PIN ปัจจุบัน"
+              class="w-full text-center tracking-widest bg-surface-raised border border-white/10 focus:border-brand rounded-lg py-2 text-sm text-white focus:outline-none transition">
+            <input type="password" id="change-pin-new" maxlength="4" placeholder="รหัส PIN ใหม่ (4 หลัก)"
+              class="w-full text-center tracking-widest bg-surface-raised border border-white/10 focus:border-brand rounded-lg py-2 text-sm text-white focus:outline-none transition">
+            <input type="password" id="change-pin-confirm" maxlength="4" placeholder="ยืนยันรหัส PIN ใหม่"
+              class="w-full text-center tracking-widest bg-surface-raised border border-white/10 focus:border-brand rounded-lg py-2 text-sm text-white focus:outline-none transition">
+            <button onclick="APP_CORE.changeAdminPin()" class="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-medium text-xs py-2.5 rounded-lg border border-amber-500/30 transition btn-active">
+              🔑 บันทึกรหัส PIN ใหม่
+            </button>
+          </div>
+        </div>
+
+        <!-- 6. Firestore Config -->
+        <div class="bg-surface-card border border-white/5 rounded-xl p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="cloud-lightning" class="w-4 h-4 text-blue-400"></i>
+              ตั้งค่าคลาวด์ซิงค์เรียลไทม์ (Firestore)
+            </h3>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="cloud-sync-toggle" class="sr-only peer" onchange="APP_CORE.toggleCloudSync()">
+              <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand"></div>
+            </label>
+          </div>
+          <div id="cloud-config-box" class="hidden space-y-3 pt-2 border-t border-white/5">
+            <p class="text-[11px] text-gray-400">วางรหัส Firebase Configuration ของคุณเพื่อเปิดระบบเชื่อมต่อเรียลไทม์ค่ะ</p>
+            <textarea id="cloud-firebase-config"
+              placeholder='{ "apiKey": "AIza...", "authDomain": "...", "projectId": "...", "storageBucket": "...", "messagingSenderId": "...", "appId": "..." }'
+              class="w-full h-24 bg-surface-raised border border-white/10 hover:border-white/20 focus:border-brand rounded-lg px-3 py-2 text-[10px] text-white focus:outline-none font-mono transition"></textarea>
+            <button onclick="APP_CORE.saveCloudFirebaseConfig()" class="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 font-medium text-xs py-2 rounded-lg border border-blue-500/30 transition btn-active">
+              💾 บันทึกและเชื่อมต่อคลาวด์กลาง
+            </button>
+          </div>
+        </div>
+
+        <div class="text-center pt-2">
+          <button onclick="APP_CORE.logoutAdmin()" class="px-4 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-white/5 rounded-lg transition btn-active">
+            🔒 ออกจากระบบผู้ดูแล
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- BORROW DRAWER -->
+  <div id="borrow-drawer" class="fixed inset-0 z-50 invisible transition-all duration-300 flex flex-col justify-end">
+    <div onclick="UI_RENDERER.closeBorrowDrawer()" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="relative glass bg-surface-card rounded-t-2xl rounded-b-none border-b-0 max-w-md mx-auto w-full max-h-[90vh] overflow-y-auto px-6 py-6 space-y-6 transform translate-y-full transition-transform duration-300" id="borrow-drawer-sheet">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center">
+            <i data-lucide="edit-3" class="w-4 h-4 text-brand-light"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-medium text-lg text-white">แบบฟอร์มลงบันทึกการยืม</h3>
+            <p class="text-[10px] text-brand-light font-semibold uppercase">Borrow Registration Form</p>
+          </div>
+        </div>
+        <button onclick="UI_RENDERER.closeBorrowDrawer()" class="p-1.5 hover:bg-white/5 rounded-full transition btn-active">
+          <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+        </button>
+      </div>
+      <div class="bg-brand/10 border border-brand/20 rounded-xl p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-surface-card flex items-center justify-center">
+            <i data-lucide="radio" class="w-5 h-5 text-brand-light"></i>
+          </div>
+          <div>
+            <p id="drawer-equip-name" class="text-sm font-semibold text-white">-</p>
+            <p id="drawer-equip-serial" class="text-xs text-gray-400">S/N: -</p>
+          </div>
+        </div>
+        <span class="bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded-full font-medium">🟢 ว่างพร้อมยืม</span>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label for="form-employee-id" class="block text-xs text-gray-400 font-medium mb-1.5">รหัสพนักงาน <span class="text-red-400">*</span></label>
+          <input type="text" id="form-employee-id" placeholder="เช่น 74012"
+            class="w-full bg-surface-raised border border-white/10 hover:border-white/20 focus:border-brand rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none transition duration-220" />
+          <span id="err-employee-id" class="hidden text-xs text-red-400 mt-1 block">กรุณากรอกรหัสพนักงาน</span>
+        </div>
+        <div>
+          <label for="form-employee-name" class="block text-xs text-gray-400 font-medium mb-1.5">ชื่อ - นามสกุล <span class="text-red-400">*</span></label>
+          <input type="text" id="form-employee-name" placeholder="เช่น สมชาย ใจดี"
+            class="w-full bg-surface-raised border border-white/10 hover:border-white/20 focus:border-brand rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none transition duration-220" />
+          <span id="err-employee-name" class="hidden text-xs text-red-400 mt-1 block">กรุณากรอกชื่อ-นามสกุลพนักงาน</span>
+        </div>
+      </div>
+      <button onclick="APP_CORE.submitBorrowRegistration()" class="w-full bg-brand hover:bg-brand-dark text-white font-medium text-sm py-3.5 rounded-xl transition duration-220 shadow-lg shadow-brand/20 flex items-center justify-center gap-1.5 btn-active">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        บันทึกการยืมเครื่องและรับวิทยุ
+      </button>
+    </div>
+  </div>
+
+  <!-- CONFIRM MODAL -->
+  <div id="custom-modal" class="fixed inset-0 z-50 invisible flex items-center justify-center px-4 transition-all duration-300">
+    <div onclick="UI_RENDERER.closeCustomModal()" class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+    <div class="relative glass bg-surface-card p-6 rounded-xl w-full max-w-sm border border-white/10 space-y-4 shadow-xl transform scale-95 transition-all duration-300" id="custom-modal-body">
+      <div class="flex items-start gap-4">
+        <div id="modal-icon-bg" class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center shrink-0 border border-brand/20">
+          <i id="modal-icon" data-lucide="info" class="w-5 h-5 text-brand-light"></i>
+        </div>
+        <div class="space-y-1">
+          <h3 id="modal-title" class="font-display font-medium text-base text-white">ยืนยัน</h3>
+          <p id="modal-desc" class="text-xs text-gray-400 leading-relaxed">-</p>
+        </div>
+      </div>
+      <div id="modal-action-row" class="flex items-center justify-end gap-2.5 pt-2">
+        <button id="modal-cancel-btn" onclick="UI_RENDERER.closeCustomModal()" class="px-4 py-2 hover:bg-white/5 rounded-lg text-xs text-gray-300 font-medium transition duration-220 btn-active">ยกเลิก</button>
+        <button id="modal-confirm-btn" class="px-4 py-2 bg-brand hover:bg-brand-dark text-white rounded-lg text-xs font-medium transition duration-220 btn-active">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast-container" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-xs px-4 pointer-events-none"></div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-surface-page/90 backdrop-blur-md border-t border-white/[0.08]">
+    <div class="max-w-md mx-auto grid grid-cols-3 h-[68px]">
+      <button onclick="UI_RENDERER.switchTab('borrow')" id="nav-borrow" class="flex flex-col items-center justify-center gap-1.5 text-brand transition duration-220 btn-active group">
+        <i data-lucide="radio" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+        <span class="text-[10px] font-medium tracking-wide">ยืมของ</span>
+      </button>
+      <button onclick="UI_RENDERER.switchTab('status')" id="nav-status" class="flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-white transition duration-220 btn-active group">
+        <i data-lucide="clipboard-list" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+        <span class="text-[10px] font-medium tracking-wide">สถานะของฉัน</span>
+      </button>
+      <button onclick="UI_RENDERER.switchTab('admin')" id="nav-admin" class="flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-white transition duration-220 btn-active group">
+        <i data-lucide="settings" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+        <span class="text-[10px] font-medium tracking-wide">แอดมิน</span>
+      </button>
+    </div>
+  </nav>
+
+  <footer class="w-full text-center py-4 mt-auto">
+    <p class="text-[10px] text-gray-600 tracking-wider font-semibold select-none">
+      [ 🅰️ ] A-Class WebCraft | Code • Share • Inspire | by Supasit.A
+    </p>
+  </footer>
+
+  <!-- Firebase Modular Imports -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
+      onSnapshot, collection, getDocs, runTransaction
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    window.FirebaseLib = {
+      initializeApp, getAuth, signInAnonymously, onAuthStateChanged,
+      getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
+      onSnapshot, collection, getDocs, runTransaction
+    };
+  </script>
+
+  <script>
+    'use strict';
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ① APP_CONFIG
+    // ─────────────────────────────────────────────────────────────────────────
+    const APP_CONFIG = (() => {
+      return {
+        dbName:            'RadioSyncLocalDB',
+        dbVersion:         1,
+        adminPinHashKey:   'radiosync_admin_pin_hash',
+        adminLockoutKey:   'radiosync_admin_lockout',
+        adminAttemptsKey:  'radiosync_admin_attempts',
+        maxAttempts:       5,
+        lockoutMs:         5 * 60 * 1000,   // 5 minutes
+        sessionTimeoutMs:  15 * 60 * 1000,  // 15 minutes
+        seedData: [
+          { id: 'radio-1', name: 'Radio No.01', serial: '400101', status: 'available', currentBorrower: null, updatedAt: Date.now() },
+          { id: 'radio-2', name: 'Radio No.02', serial: '400102', status: 'available', currentBorrower: null, updatedAt: Date.now() },
+          { id: 'radio-3', name: 'Radio No.03', serial: '400103', status: 'available', currentBorrower: null, updatedAt: Date.now() }
+        ]
+      };
+    })();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ② CRYPTO_UTILS — Web Crypto SHA-256 PIN hashing
+    // ─────────────────────────────────────────────────────────────────────────
+    const CRYPTO_UTILS = (() => {
+      const SALT = 'radiosync-pin-salt-v1';
+
+      async function hashPin(pin) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(pin + SALT);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        return Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+      }
+
+      return { hashPin };
+    })();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ③ PIN_GUARD — Brute-force protection, lockout, change PIN
+    // ─────────────────────────────────────────────────────────────────────────
+    const PIN_GUARD = (() => {
+      async function ensureDefaultPin() {
+        if (!localStorage.getItem(APP_CONFIG.adminPinHashKey)) {
+          const hash = await CRYPTO_UTILS.hashPin('1234');
+          localStorage.setItem(APP_CONFIG.adminPinHashKey, hash);
+        }
+      }
+
+      function getLockoutStatus() {
+        const until = parseInt(localStorage.getItem(APP_CONFIG.adminLockoutKey) || '0');
+        if (Date.now() < until) {
+          return { locked: true, remainingMs: until - Date.now() };
+        }
+        return { locked: false, remainingMs: 0 };
+      }
+
+      async function verify(pin) {
+        const lockout = getLockoutStatus();
+        if (lockout.locked) {
+          return { success: false, locked: true, remainingMs: lockout.remainingMs };
+        }
+
+        const inputHash  = await CRYPTO_UTILS.hashPin(pin);
+        const storedHash = localStorage.getItem(APP_CONFIG.adminPinHashKey);
+
+        if (inputHash === storedHash) {
+          localStorage.removeItem(APP_CONFIG.adminAttemptsKey);
+          localStorage.removeItem(APP_CONFIG.adminLockoutKey);
+          return { success: true };
+        }
+
+        const attempts = parseInt(localStorage.getItem(APP_CONFIG.adminAttemptsKey) || '0') + 1;
+        if (attempts >= APP_CONFIG.maxAttempts) {
+          const until = Date.now() + APP_CONFIG.lockoutMs;
+          localStorage.setItem(APP_CONFIG.adminLockoutKey, String(until));
+          localStorage.removeItem(APP_CONFIG.adminAttemptsKey);
+          return { success: false, locked: true, remainingMs: APP_CONFIG.lockoutMs };
+        }
+
+        localStorage.setItem(APP_CONFIG.adminAttemptsKey, String(attempts));
+        return { success: false, locked: false, remainingAttempts: APP_CONFIG.maxAttempts - attempts };
+      }
+
+      async function changePin(currentPin, newPin) {
+        const check = await verify(currentPin);
+        if (!check.success) return check;
+        const newHash = await CRYPTO_UTILS.hashPin(newPin);
+        localStorage.setItem(APP_CONFIG.adminPinHashKey, newHash);
+        return { success: true };
+      }
+
+      return { ensureDefaultPin, verify, changePin, getLockoutStatus };
+    })();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ④ STATE_STORE — Reactive pub/sub state
+    // ─────────────────────────────────────────────────────────────────────────
+    const STATE_STORE = (() => {
+      const _state = {
+        equipment:       [],
+        currentTab:      'borrow',
+        searchQuery:     '',
+        activeUser:      JSON.parse(localStorage.getItem('radiosync_user')) || null,
+        adminAuthorized: false,
+        syncStatus:      'local',
+        logs:            []
+      };
+      const _listeners = {};
+
+      function _publish(key, val) {
+        (_listeners[key] || []).forEach(fn => {
+          try { fn(val); } catch (e) { console.error(`State listener error: ${key}`, e); }
+        });
+      }
+
+      return {
+        set(key, value) {
+          _state[key] = value;
+          _publish(key, value);
+        },
+        get(key) { return _state[key]; },
+        on(key, fn) {
+          if (!_listeners[key]) _listeners[key] = [];
+          _listeners[key].push(fn);
+        },
+        logout() {
+          localStorage.removeItem('radiosync_user');
+          this.set('activeUser', null);
+          UI_RENDERER.showToast('เปลี่ยนผู้ใช้งานสำเร็จแล้วค่ะ', 'success');
+          UI_RENDERER.render();
+        }
+      };
+    })();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ⑤ STORAGE_ENGINE — IndexedDB wrapper with error handling
+    // ─────────────────────────────────────────────────────────────────────────
+    const STORAGE_ENGINE = (() => {
+      let _db = null;
+
+      function _openDB() {
+        return new Promise((resolve, reject) => {
+          if (_db) return resolve(_db);
+          const req = indexedDB.open(APP_CONFIG.dbName, APP_CONFIG.dbVersion);
+          req.onerror = e => reject(e.target.error);
+          req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+          req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('equipment')) {
+              db.createObjectStore('equipment', { keyPath: 'id' }).createIndex('updatedAt', 'updatedAt');
+            }
+            if (!db.objectStoreNames.contains('logs')) {
+              db.createObjectStore('logs', { keyPath: 'id' }).createIndex('timestamp', 'timestamp');
+            }
+          };
+        });
+      }
+
+      function _txPromise(storeName, mode, fn) {
+        return _openDB().then(db => new Promise((resolve, reject) => {
+          const tx = db.transaction(storeName, mode);
+          tx.onerror   = () => reject(tx.error);
+          tx.onabort   = () => reject(new Error('Transaction aborted'));
+          fn(tx.objectStore(storeName), resolve, reject);
+        }));
+      }
+
+      return {
+        getAll(storeName) {
+          return _txPromise(storeName, 'readonly', (store, resolve, reject) => {
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror   = () => reject(req.error);
+          });
+        },
+        put(storeName, item) {
+          return _txPromise(storeName, 'readwrite', (store, resolve, reject) => {
+            const req = store.put(item);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror   = () => reject(req.error);
+          });
+        },
+        putMany(storeName, items) {
+          return _openDB().then(db => new Promise((resolve, reject) => {
+            const tx = db.transaction(storeName, 'readwrite');
+            const store = tx.objectStore(storeName);
+            const errors = [];
+            items.forEach(item => {
+              const req = store.put(item);
+              req.onerror = e => errors.push(e.target.error);
+            });
+            tx.oncomplete = () => {
+              if (errors.length) console.warn('putMany partial errors', errors);
+              resolve(errors.length === 0);
+            };
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(new Error('putMany transaction aborted'));
+          }));
+        },
+        delete(storeName, key) {
+          return _txPromise(storeName, 'readwrite', (store, resolve, reject) => {
+            const req = store.delete(key);
+            req.onsuccess = () => resolve();
+            req.onerror   = () => reject(req.error);
+          });
+        },
+        clearStore(storeName) {
+          return _txPromise(storeName, 'readwrite', (store, resolve, reject) => {
+            const req = store.clear();
+            req.onsuccess = () => resolve();
+            req.onerror   = () => reject(req.error);
+          });
+        }
+      };
+    })();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ⑥ CLOUD_SYNC_MANAGER — Firestore real-time sync with borrow transaction
+    // ─────────────────────────────────────────────────────────────────────────
+    const CLOUD_SYNC_MANAGER = (() => {
+      let _fs = null, _auth = null, _unsub = null;
+      let _active = false;
+      let _appId = 'a-class-radiosync';
+      try { if (typeof __app_id !== 'undefined') _appId = __app_id; } catch(e) {}
+
+      async function _initFirebase(config) {
+        if (!window.FirebaseLib) return false;
+        try {
+          const { initializeApp, getAuth, signInAnonymously, getFirestore } = window.FirebaseLib;
+          const app = initializeApp(config);
+          _fs   = getFirestore(app);
+          _auth = getAuth(app);
+          await signInAnonymously(_auth);
+          _active = true;
+          STATE_STORE.set('syncStatus', 'online');
+          UI_RENDERER.showToast('⚡ เชื่อมต่อระบบคลาวด์เรียลไทม์แล้วค่ะ', 'success');
+          return true;
+        } catch (e) {
+          console.error('Firebase init failed', e);
+          STATE_STORE.set('syncStatus', 'error');
+          return false;
+        }
+      }
+
+      function _colPath(name) {
+        const { collection } = window.FirebaseLib;
+        return collection(_fs, 'artifacts', _appId, 'public', 'data', name);
+      }
+
+      function _docRef(colName, id) {
+        const { doc } = window.FirebaseLib;
+        return doc(_fs, 'artifacts', _appId, 'public', 'data', colName, id);
+      }
+
+      return {
+        async init(customConfig = null) {
+          let config = customConfig;
+          if (!config) {
+            try {
+              if (typeof __firebase_config !== 'undefined') config = JSON.parse(__firebase_config);
+            } catch(e) {}
+          }
+          if (!config) {
+            const saved = localStorage.getItem('radiosync_firebase_config');
+            if (saved) try { config = JSON.parse(saved); } catch(e) {}
+          }
+          if (!config) { STATE_STORE.set('syncStatus', 'local'); return; }
+          const ok = await _initFirebase(config);
+          if (ok) this.startListening();
+        },
+
+        startListening() {
+          if (!_active || !_fs) return;
+          const { onSnapshot } = window.FirebaseLib;
+          if (_unsub) _unsub();
+
+          _unsub = onSnapshot(_colPath('equipment'), async snapshot => {
+            STATE_STORE.set('syncStatus', 'syncing');
+            const items = [];
+            snapshot.forEach(d => items.push(d.data()));
+            if (items.length > 0) {
+              await STORAGE_ENGINE.putMany('equipment', items);
+              STATE_STORE.set('equipment', items);
+            }
+            STATE_STORE.set('syncStatus', 'online');
+            UI_RENDERER.render();
+          }, err => {
+            console.error('Firestore listen error', err);
+            STATE_STORE.set('syncStatus', 'error');
+          });
+        },
+
+        stopListening() {
+          if (_unsub) { _unsub(); _unsub = null; }
+        },
+
+        // Atomic transaction: check availability then write — prevents double-booking
+        async borrowWithTransaction(itemId, updatedItem) {
+          if (!_active || !_fs) return false;
+          const { runTransaction } = window.FirebaseLib;
+          const ref = _docRef('equipment', itemId);
+          await runTransaction(_fs, async tx => {
+            const snap = await tx.get(ref);
+            if (!snap.exists() || snap.data().status !== 'available') {
+              const err = new Error('ALREADY_BORROWED');
+              err.code = 'ALREADY_BORROWED';
+              throw err;
+            }
+            tx.set(ref, updatedItem);
+          });
+          return true;
+        },
+
+        async syncItem(colName, item) {
+          if (!_active || !_fs) return;
+          try {
+            const { setDoc } = window.FirebaseLib;
+            await setDoc(_docRef(colName, item.id), item);
+          } catch(e) {
+            console.error(`syncItem failed: ${colName}/${item.id}`, e);
+            STATE_STORE.set('syncStatus', 'error');
+          }
+        },
+
+        async deleteItem(colName, id) {
+          if (!_active || !_fs) return;
+          try {
+            const { deleteDoc } = window.FirebaseLib;
+            await deleteDoc(_docRef(colName, id));
+          } catch(e) {
+            console.error(`deleteItem failed: ${colName}/${id}`, e);
+          }
+        },
+
+        get active() { return _active; }
+      };
+    })();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ⑦ SESSION_MANAGER — 15-minute admin inactivity auto-logout
+    // ─────────────────────────────────────────────────────────────────────────
+    const SESSION_MANAGER = (() => {
+      let _timer = null;
+      let _countdownInterval = null;
+      let _expiresAt = 0;
+
+      function _tick() {
+        const el = document.getElementById('session-countdown');
+        if (!el) return;
+        const remaining = Math.max(0, _expiresAt - Date.now());
+        const m = Math.floor(remaining / 60000);
+        const s = Math.floor((remaining % 60000) / 1000);
+        el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+      }
+
+      return {
+        reset() {
+          if (_timer) clearTimeout(_timer);
+          if (_countdownInterval) clearInterval(_countdownInterval);
+
+          if (!STATE_STORE.get('adminAuthorized')) return;
+
+          _expiresAt = Date.now() + APP_CONFIG.sessionTimeoutMs;
+          _tick();
+          _countdownInterval = setInterval(_tick, 1000);
+
+          _timer = setTimeout(() => {
+            clearInterval(_countdownInterval);
+            STATE_STORE.set('adminAuthorized', false);
+            UI_RENDERER.showToast('🔒 หมดเวลาใช้งาน: ออกจากระบบแอดมินอัตโนมัติค่ะ', 'error');
+            UI_RENDERER.render();
+          }, APP_CONFIG.sessionTimeoutMs);
+        },
+
+        clear() {
+          if (_timer) clearTimeout(_timer);
+          if (_countdownInterval) clearInterval(_countdownInterval);
+          _timer = null;
+          _countdownInterval = null;
+        }
+      };
+    })();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ⑧ UI_RENDERER — Rendering, toasts, modals, tab switching
+    // ─────────────────────────────────────────────────────────────────────────
+    const UI_RENDERER = (() => {
+      let _toastCount = 0;
+      let _selectedEquip = null;
+      let _lockoutInterval = null;
+
+      function _esc(str) {
+        if (str == null) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function _thaiDate(ts) {
+        if (!ts) return '-';
+        return new Intl.DateTimeFormat('th-TH', {
+          year: 'numeric', month: 'short', day: 'numeric',
+          hour: '2-digit', minute: '2-digit', calendar: 'buddhist'
+        }).format(new Date(ts));
+      }
+
+      function _startLockoutCountdown(remainingMs) {
+        if (_lockoutInterval) clearInterval(_lockoutInterval);
+        const el = document.getElementById('admin-lockout-countdown');
+        if (!el) return;
+
+        let end = Date.now() + remainingMs;
+        function tick() {
+          const left = Math.max(0, end - Date.now());
+          const m = Math.floor(left / 60000);
+          const s = Math.floor((left % 60000) / 1000);
+          if (el) el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+          if (left === 0) {
+            clearInterval(_lockoutInterval);
+            document.getElementById('admin-lockout-msg')?.classList.add('hidden');
+            document.getElementById('admin-pin-input').disabled = false;
+          }
+        }
+        tick();
+        _lockoutInterval = setInterval(tick, 1000);
+      }
+
+      return {
+        showToast(message, type = 'success') {
+          const container = document.getElementById('toast-container');
+          const id = `toast-${_toastCount++}`;
+
+          const iconMap  = { success: 'check-circle', error: 'alert-triangle' };
+          const colorMap = {
+            success: 'border-green-500/30 text-green-400 bg-green-950/25',
+            error:   'border-red-500/30 text-red-400 bg-red-950/25'
+          };
+
+          const icon  = iconMap[type]  || 'info';
+          const color = colorMap[type] || 'border-brand-light/30 text-white bg-surface-card/90';
+
+          container.insertAdjacentHTML('beforeend', `
+            <div id="${id}" class="glass ${color} border px-4 py-3 rounded-xl flex items-center gap-2.5 shadow-lg transform translate-y-4 opacity-0 transition-all duration-300 pointer-events-auto mb-2">
+              <i data-lucide="${icon}" class="w-4 h-4 shrink-0"></i>
+              <p class="text-xs font-medium">${_esc(message)}</p>
+            </div>
+          `);
+          lucide.createIcons();
+
+          const el = document.getElementById(id);
+          setTimeout(() => el?.classList.remove('translate-y-4', 'opacity-0'), 10);
+          setTimeout(() => {
+            el?.classList.add('translate-y-4', 'opacity-0');
+            setTimeout(() => el?.remove(), 300);
+          }, 3200);
+        },
+
+        showCustomConfirm(title, desc, label, onConfirm, icon = 'info') {
+          const modal = document.getElementById('custom-modal');
+          const body  = document.getElementById('custom-modal-body');
+
+          document.getElementById('modal-title').textContent = title;
+          document.getElementById('modal-desc').textContent  = desc;
+
+          const btn = document.getElementById('modal-confirm-btn');
+          btn.textContent = label;
+          btn.onclick = () => { onConfirm(); this.closeCustomModal(); };
+
+          const iconEl = document.getElementById('modal-icon');
+          iconEl.setAttribute('data-lucide', icon);
+          lucide.createIcons({ nodes: [iconEl] });
+
+          modal.classList.remove('invisible');
+          setTimeout(() => body.classList.remove('scale-95'), 10);
+        },
+
+        closeCustomModal() {
+          const modal = document.getElementById('custom-modal');
+          const body  = document.getElementById('custom-modal-body');
+          body.classList.add('scale-95');
+          setTimeout(() => modal.classList.add('invisible'), 150);
+        },
+
+        switchTab(tabName) {
+          STATE_STORE.set('currentTab', tabName);
+          ['borrow', 'status', 'admin'].forEach(t => {
+            const active = t === tabName;
+            document.getElementById(`nav-${t}`).className =
+              `flex flex-col items-center justify-center gap-1.5 transition duration-220 btn-active group ${
+                active ? 'text-brand' : 'text-gray-400 hover:text-white'
+              }`;
+            document.getElementById(`tab-${t}-content`).classList.toggle('hidden', !active);
+          });
+          // Reset session timer on any admin tab visit
+          if (tabName === 'admin' && STATE_STORE.get('adminAuthorized')) SESSION_MANAGER.reset();
+          this.render();
+        },
+
+        openBorrowDrawer(item) {
+          _selectedEquip = item;
+          document.getElementById('drawer-equip-name').textContent   = item.name;
+          document.getElementById('drawer-equip-serial').textContent = `S/N: ${item.serial}`;
+
+          const user = STATE_STORE.get('activeUser');
+          if (user) {
+            document.getElementById('form-employee-id').value   = user.empId;
+            document.getElementById('form-employee-name').value = user.name;
+          }
+
+          const drawer = document.getElementById('borrow-drawer');
+          const sheet  = document.getElementById('borrow-drawer-sheet');
+          drawer.classList.remove('invisible');
+          setTimeout(() => sheet.classList.remove('translate-y-full'), 10);
+        },
+
+        closeBorrowDrawer() {
+          const sheet = document.getElementById('borrow-drawer-sheet');
+          sheet.classList.add('translate-y-full');
+          setTimeout(() => {
+            document.getElementById('borrow-drawer').classList.add('invisible');
+            _selectedEquip = null;
+          }, 200);
+        },
+
+        get selectedEquipment() { return _selectedEquip; },
+
+        showLockout(remainingMs) {
+          const lockEl     = document.getElementById('admin-lockout-msg');
+          const attemptsEl = document.getElementById('admin-attempts-msg');
+          const pinInput   = document.getElementById('admin-pin-input');
+
+          lockEl?.classList.remove('hidden');
+          attemptsEl?.classList.add('hidden');
+          if (pinInput) pinInput.disabled = true;
+          _startLockoutCountdown(remainingMs);
+        },
+
+        showAttemptsWarning(remaining) {
+          const el = document.getElementById('admin-attempts-msg');
+          const left = document.getElementById('admin-attempts-left');
+          if (el && left) {
+            left.textContent = remaining;
+            el.classList.remove('hidden');
+          }
+        },
+
+        // ─── Master Render ───────────────────────────────────────────────────
+        render() {
+          const tab       = STATE_STORE.get('currentTab');
+          const equipment = STATE_STORE.get('equipment');
+          const query     = STATE_STORE.get('searchQuery').toLowerCase();
+          const user      = STATE_STORE.get('activeUser');
+          const sync      = STATE_STORE.get('syncStatus');
+
+          // Sync indicator
+          const glow = document.getElementById('sync-glow');
+          const txt  = document.getElementById('sync-text');
+          const offlineBanner = document.getElementById('offline-banner');
+
+          const syncMap = {
+            online:  { cls: 'bg-green-500 pulse-green',  label: 'เชื่อมต่อคลาวด์',  offline: true  },
+            syncing: { cls: 'bg-blue-500 pulse-blue',    label: 'กำลังซิงค์...',     offline: false },
+            error:   { cls: 'bg-red-500 pulse-red',      label: 'เชื่อมต่อติดขัด',  offline: false },
+            local:   { cls: 'bg-amber-500 pulse-amber',  label: 'เซฟในเครื่อง',     offline: false }
+          };
+          const s = syncMap[sync] || syncMap.local;
+          glow.className = `w-2.5 h-2.5 rounded-full ${s.cls}`;
+          txt.textContent = s.label;
+          offlineBanner?.classList.toggle('hidden', s.offline || sync === 'online');
+
+          // User card
+          const userCard = document.getElementById('active-user-container');
+          if (user) {
+            userCard.classList.remove('hidden');
+            document.getElementById('active-user-name').textContent =
+              `รหัส ${_esc(user.empId)} - ${_esc(user.name)}`;
+          } else {
+            userCard.classList.add('hidden');
+          }
+
+          // ── TAB 1: Borrow ─────────────────────────────────────────────────
+          if (tab === 'borrow') {
+            const list     = document.getElementById('equipment-list');
+            const filtered = equipment.filter(e =>
+              e.name.toLowerCase().includes(query) || e.serial.toLowerCase().includes(query)
+            );
+            const avail = equipment.filter(e => e.status === 'available').length;
+            document.getElementById('equip-count-badge').textContent = `ว่าง ${avail} เครื่อง`;
+
+            if (filtered.length === 0) {
+              list.innerHTML = `
+                <div class="glass p-8 text-center text-gray-500 space-y-2">
+                  <i data-lucide="info" class="w-8 h-8 mx-auto"></i>
+                  <p class="text-xs">ไม่พบอุปกรณ์ที่ค้นหาเลยค่ะ</p>
+                </div>`;
+            } else {
+              list.innerHTML = filtered.map(item => {
+                let badge = '', actionBtn = '';
+                if (item.status === 'available') {
+                  badge = `<span class="text-[10px] bg-green-500/10 border border-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium">🟢 ว่าง</span>`;
+                  actionBtn = `
+                    <button onclick="APP_CORE.handleBorrowRequest('${_esc(item.id)}')"
+                      class="w-full mt-3 bg-brand hover:bg-brand-dark text-white font-medium text-xs py-2 rounded-lg transition btn-active flex items-center justify-center gap-1">
+                      <i data-lucide="hand-helping" class="w-3.5 h-3.5"></i> ลงทะเบียนขอยืม
+                    </button>`;
+                } else if (item.status === 'pending_return') {
+                  badge = `<span class="text-[10px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-medium">🟡 รอ Admin ตรวจรับคืน</span>`;
+                  actionBtn = `<button disabled class="w-full mt-3 bg-surface-raised text-gray-500 text-xs py-2 rounded-lg cursor-not-allowed">อยู่ระหว่างส่งคืนให้ผู้ดูแล</button>`;
+                } else {
+                  const bName = _esc(item.currentBorrower?.name ?? 'ไม่ทราบชื่อ');
+                  badge = `<span class="text-[10px] bg-red-500/10 border border-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium">🔴 ถูกยืมโดย ${bName}</span>`;
+                  actionBtn = `<button disabled class="w-full mt-3 bg-surface-raised text-gray-600 text-xs py-2 rounded-lg cursor-not-allowed">ไม่สามารถยืมได้ในขณะนี้</button>`;
+                }
+                return `
+                  <div class="bg-surface-card border border-white/5 rounded-xl p-4 hover:border-white/10 transition-all duration-220">
+                    <div class="flex items-start justify-between">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-surface-raised flex items-center justify-center border border-white/5">
+                          <i data-lucide="radio" class="w-5 h-5 text-brand-light"></i>
+                        </div>
+                        <div>
+                          <h4 class="text-sm font-semibold text-white">${_esc(item.name)}</h4>
+                          <p class="text-[10px] text-gray-500">S/N: ${_esc(item.serial)}</p>
+                        </div>
+                      </div>
+                      ${badge}
+                    </div>
+                    ${actionBtn}
+                  </div>`;
+              }).join('');
+            }
+          }
+
+          // ── TAB 2: Status ─────────────────────────────────────────────────
+          if (tab === 'status') {
+            const loginPrompt = document.getElementById('status-not-logged-in');
+            const dashboard   = document.getElementById('status-dashboard');
+
+            if (!user) {
+              loginPrompt.classList.remove('hidden');
+              dashboard.classList.add('hidden');
+              return;
+            }
+
+            loginPrompt.classList.add('hidden');
+            dashboard.classList.remove('hidden');
+
+            const myBorrowed = equipment.filter(e => e.status === 'borrowed'       && e.currentBorrower?.empId === user.empId);
+            const myPending  = equipment.filter(e => e.status === 'pending_return' && e.currentBorrower?.empId === user.empId);
+
+            const activeList = document.getElementById('my-active-borrowed-list');
+            activeList.innerHTML = myBorrowed.length === 0
+              ? `<div class="text-center py-6 text-xs text-gray-500 glass">คุณไม่มีอุปกรณ์ค้างยืมในขณะนี้</div>`
+              : myBorrowed.map(item => `
+                  <div class="bg-surface-card border border-brand/20 rounded-xl p-4 space-y-3">
+                    <div class="flex items-start justify-between">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
+                          <i data-lucide="radio" class="w-5 h-5 text-brand-light"></i>
+                        </div>
+                        <div>
+                          <h4 class="text-sm font-semibold text-white">${_esc(item.name)}</h4>
+                          <span class="text-[10px] text-gray-500">ยืมเมื่อ: ${_thaiDate(item.currentBorrower?.borrowedAt)}</span>
+                        </div>
+                      </div>
+                      <span class="text-[10px] bg-brand/20 text-brand-light px-2 py-0.5 rounded-full font-semibold">🔵 ถือครอง</span>
+                    </div>
+                    <button onclick="APP_CORE.requestReturn('${_esc(item.id)}')"
+                      class="w-full bg-brand/20 hover:bg-brand/30 text-brand-light border border-brand/30 text-xs py-2 rounded-lg transition btn-active flex items-center justify-center gap-1">
+                      <i data-lucide="corner-down-left" class="w-3.5 h-3.5"></i> ส่งคืนแอดมิน (คืนของ)
+                    </button>
+                  </div>`).join('');
+
+            const pendingList = document.getElementById('my-pending-returns-list');
+            pendingList.innerHTML = myPending.length === 0
+              ? `<div class="text-center py-4 text-xs text-gray-600">ไม่มีรายการรอส่งคืนค่ะ</div>`
+              : myPending.map(item => `
+                  <div class="bg-surface-card border border-white/5 rounded-xl p-4 opacity-75">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-surface-raised flex items-center justify-center">
+                          <i data-lucide="radio" class="w-5 h-5 text-amber-400"></i>
+                        </div>
+                        <div>
+                          <h4 class="text-sm font-semibold text-white">${_esc(item.name)}</h4>
+                          <span class="text-[10px] text-gray-500">รอตรวจของและยืนยัน</span>
+                        </div>
+                      </div>
+                      <span class="text-[10px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-medium">🟡 กำลังส่งคืน</span>
+                    </div>
+                  </div>`).join('');
+          }
+
+          // ── TAB 3: Admin ──────────────────────────────────────────────────
+          if (tab === 'admin') {
+            const authorized = STATE_STORE.get('adminAuthorized');
+            document.getElementById('admin-lock-screen').classList.toggle('hidden', authorized);
+            document.getElementById('admin-authorized-console').classList.toggle('hidden', !authorized);
+
+            if (authorized) {
+              // Reset lockout UI when entering console
+              document.getElementById('admin-pin-input').value = '';
+              document.getElementById('admin-lockout-msg')?.classList.add('hidden');
+              document.getElementById('admin-attempts-msg')?.classList.add('hidden');
+
+              document.getElementById('admin-stat-total').textContent = equipment.length;
+              document.getElementById('admin-stat-borrowed').textContent =
+                equipment.filter(e => e.status !== 'available').length;
+
+              // Pending approvals
+              const approvalContainer = document.getElementById('admin-approval-list');
+              const pending = equipment.filter(e => e.status === 'pending_return');
+              approvalContainer.innerHTML = pending.length === 0
+                ? `<div class="text-center py-8 text-xs text-gray-500 glass space-y-1">
+                     <i data-lucide="check-circle" class="w-6 h-6 text-green-400 mx-auto"></i>
+                     <p class="font-medium text-white">ตรวจสอบคืนวิทยุเรียบร้อยหมดแล้วค่ะ</p>
+                   </div>`
+                : pending.map(item => `
+                    <div class="bg-surface-card border border-amber-500/20 rounded-xl p-4 space-y-3">
+                      <div class="flex items-start justify-between">
+                        <div class="flex items-center gap-2.5">
+                          <div class="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
+                            <i data-lucide="radio" class="w-4 h-4 text-amber-400"></i>
+                          </div>
+                          <div>
+                            <h4 class="text-sm font-semibold text-white">${_esc(item.name)}</h4>
+                            <p class="text-[10px] text-gray-400">
+                              ผู้ส่งคืน: รหัส ${_esc(item.currentBorrower?.empId ?? '-')} — ${_esc(item.currentBorrower?.name ?? 'ไม่ทราบ')}
+                            </p>
+                          </div>
+                        </div>
+                        <span class="text-[10px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">รอเซ็นรับ</span>
+                      </div>
+                      <button onclick="APP_CORE.approveReturn('${_esc(item.id)}')"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-medium text-xs py-2 rounded-lg transition btn-active flex items-center justify-center gap-1">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i> ของครบ/สภาพดี — ยืนยันรับคืน
+                      </button>
+                    </div>`).join('');
+
+              // Inventory list
+              const invContainer = document.getElementById('admin-inventory-list');
+              invContainer.innerHTML = equipment.map(item => {
+                const badge =
+                  item.status === 'available'      ? `<span class="text-[9px] bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded">ว่าง</span>`     :
+                  item.status === 'pending_return' ? `<span class="text-[9px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded">รอคืน</span>`    :
+                                                     `<span class="text-[9px] bg-red-500/10   text-red-400   px-1.5 py-0.5 rounded">ยืมอยู่</span>`;
+                return `
+                  <div class="bg-surface-raised border border-white/5 rounded-lg px-3 py-2 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                      <i data-lucide="radio" class="w-4 h-4 text-gray-400"></i>
+                      <span class="text-xs font-semibold text-white">${_esc(item.name)}</span>
+                      <span class="text-[9px] text-gray-500">(${_esc(item.serial)})</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      ${badge}
+                      <button onclick="APP_CORE.deleteEquipmentFromAdmin('${_esc(item.id)}')"
+                        class="p-1 hover:bg-white/5 text-gray-500 hover:text-red-400 rounded transition btn-active">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                  </div>`;
+              }).join('');
+            } else {
+              // Show lockout state on lock screen if applicable
+              const lockout = PIN_GUARD.getLockoutStatus();
+              if (lockout.locked) this.showLockout(lockout.remainingMs);
+            }
+          }
+
+          lucide.createIcons();
+        }
+      };
+    })();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ⑨ APP_CORE — Business logic, init, export
+    // ─────────────────────────────────────────────────────────────────────────
+    const APP_CORE = (() => {
+      const _borrowingLocks = new Set(); // Prevent double-tap race on same device
+
+      async function _seed() {
+        try {
+          const items = await STORAGE_ENGINE.getAll('equipment');
+          if (items.length === 0) {
+            await STORAGE_ENGINE.putMany('equipment', APP_CONFIG.seedData);
+            STATE_STORE.set('equipment', [...APP_CONFIG.seedData]);
+          } else {
+            STATE_STORE.set('equipment', items);
+          }
+        } catch(e) {
+          console.error('Seed failed', e);
+        }
+      }
+
+      return {
+        async init() {
+          // Register service worker
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(e =>
+              console.warn('SW registration failed', e)
+            );
+          }
+
+          await PIN_GUARD.ensureDefaultPin();
+          await _seed();
+
+          // Search with debounce
+          const searchInput   = document.getElementById('search-input');
+          const clearSearchBtn = document.getElementById('clear-search-btn');
+          let debounce;
+          searchInput.addEventListener('input', e => {
+            clearTimeout(debounce);
+            const val = e.target.value;
+            clearSearchBtn.classList.toggle('hidden', val.trim() === '');
+            debounce = setTimeout(() => {
+              STATE_STORE.set('searchQuery', val);
+              UI_RENDERER.render();
+            }, 150);
+          });
+          clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearSearchBtn.classList.add('hidden');
+            STATE_STORE.set('searchQuery', '');
+            UI_RENDERER.render();
+          });
+
+          // Restore cloud sync toggle state
+          const toggleSaved = localStorage.getItem('radiosync_cloud_sync_active') === 'true';
+          document.getElementById('cloud-sync-toggle').checked = toggleSaved;
+          if (toggleSaved) {
+            document.getElementById('cloud-config-box').classList.remove('hidden');
+            const saved = localStorage.getItem('radiosync_firebase_config');
+            if (saved) document.getElementById('cloud-firebase-config').value = saved;
+          }
+
+          // Online/offline events
+          window.addEventListener('online',  () => {
+            if (localStorage.getItem('radiosync_cloud_sync_active') === 'true') CLOUD_SYNC_MANAGER.init();
+            else STATE_STORE.set('syncStatus', 'local');
+          });
+          window.addEventListener('offline', () => {
+            CLOUD_SYNC_MANAGER.stopListening();
+            STATE_STORE.set('syncStatus', 'local');
+          });
+
+          if (toggleSaved && navigator.onLine) await CLOUD_SYNC_MANAGER.init();
+
+          UI_RENDERER.render();
+        },
+
+        handleBorrowRequest(id) {
+          if (_borrowingLocks.has(id)) {
+            UI_RENDERER.showToast('กำลังดำเนินการอยู่ กรุณารอสักครู่ค่ะ', 'error');
+            return;
+          }
+          const item = STATE_STORE.get('equipment').find(e => e.id === id);
+          if (item && item.status === 'available') UI_RENDERER.openBorrowDrawer(item);
+        },
+
+        async submitBorrowRegistration() {
+          const empIdField   = document.getElementById('form-employee-id');
+          const empNameField = document.getElementById('form-employee-name');
+          const empId   = empIdField.value.trim();
+          const empName = empNameField.value.trim();
+
+          let hasError = false;
+          document.getElementById('err-employee-id').classList.toggle('hidden', empId !== '');
+          document.getElementById('err-employee-name').classList.toggle('hidden', empName !== '');
+          if (!empId)   hasError = true;
+          if (!empName) hasError = true;
+          if (hasError) return;
+
+          const item = UI_RENDERER.selectedEquipment;
+          if (!item) return;
+
+          // Prevent duplicate borrow on same device
+          if (_borrowingLocks.has(item.id)) {
+            UI_RENDERER.showToast('กำลังดำเนินการอยู่ กรุณารอสักครู่ค่ะ', 'error');
+            return;
+          }
+          _borrowingLocks.add(item.id);
+
+          try {
+            // Save user profile
+            const activeUser = { empId, name: empName };
+            localStorage.setItem('radiosync_user', JSON.stringify(activeUser));
+            STATE_STORE.set('activeUser', activeUser);
+
+            const updatedItem = {
+              ...item,
+              status: 'borrowed',
+              currentBorrower: { empId, name: empName, borrowedAt: Date.now() },
+              updatedAt: Date.now()
+            };
+
+            // Cloud-first with atomic transaction; local-only fallback
+            if (CLOUD_SYNC_MANAGER.active) {
+              try {
+                await CLOUD_SYNC_MANAGER.borrowWithTransaction(item.id, updatedItem);
+              } catch(e) {
+                if (e.code === 'ALREADY_BORROWED') {
+                  UI_RENDERER.showToast('⚠️ วิทยุเครื่องนี้ถูกยืมไปแล้วค่ะ กรุณาเลือกเครื่องอื่น', 'error');
+                  UI_RENDERER.closeBorrowDrawer();
+                  return;
+                }
+                throw e;
+              }
+            } else {
+              await STORAGE_ENGINE.put('equipment', updatedItem);
+            }
+
+            // Write audit log
+            const log = {
+              id: `log-${crypto.randomUUID()}`,
+              equipId: item.id, equipName: item.name,
+              empId, empName, action: 'ยืมอุปกรณ์',
+              timestamp: Date.now(), comment: '-'
+            };
+            await STORAGE_ENGINE.put('logs', log);
+            if (CLOUD_SYNC_MANAGER.active) await CLOUD_SYNC_MANAGER.syncItem('logs', log);
+
+            // Update in-memory state (immutable)
+            STATE_STORE.set('equipment',
+              STATE_STORE.get('equipment').map(e => e.id === item.id ? updatedItem : e)
+            );
+
+            UI_RENDERER.closeBorrowDrawer();
+            UI_RENDERER.showToast(`📻 ยืม ${item.name} สำเร็จแล้วค่ะ`, 'success');
+            setTimeout(() => UI_RENDERER.switchTab('status'), 300);
+          } catch(e) {
+            console.error('Borrow failed', e);
+            UI_RENDERER.showToast('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้งค่ะ', 'error');
+          } finally {
+            _borrowingLocks.delete(item.id);
+          }
+        },
+
+        requestReturn(id) {
+          const equipment = STATE_STORE.get('equipment');
+          const item = equipment.find(e => e.id === id);
+          if (!item) return;
+
+          UI_RENDERER.showCustomConfirm(
+            'ยืนยันส่งคืนเครื่อง?',
+            `คุณแน่ใจใช่ไหมว่าต้องการส่งคืน ${item.name} ให้ผู้ดูแลตรวจสอบ?`,
+            'ยืนยันส่งคืนของ',
+            async () => {
+              const updatedItem = { ...item, status: 'pending_return', updatedAt: Date.now() };
+              await STORAGE_ENGINE.put('equipment', updatedItem);
+
+              const log = {
+                id: `log-${crypto.randomUUID()}`,
+                equipId: item.id, equipName: item.name,
+                empId:   item.currentBorrower?.empId  ?? 'unknown',
+                empName: item.currentBorrower?.name   ?? 'unknown',
+                action: 'ส่งคืน (รอตรวจ)', timestamp: Date.now(),
+                comment: 'พนักงานกดส่งคืนของ'
+              };
+              await STORAGE_ENGINE.put('logs', log);
+
+              if (CLOUD_SYNC_MANAGER.active) {
+                await CLOUD_SYNC_MANAGER.syncItem('equipment', updatedItem);
+                await CLOUD_SYNC_MANAGER.syncItem('logs', log);
+              }
+
+              STATE_STORE.set('equipment',
+                STATE_STORE.get('equipment').map(e => e.id === id ? updatedItem : e)
+              );
+              UI_RENDERER.showToast('ส่งคืนสำเร็จ: กรุณานำส่งแอดมินเพื่อตรวจของนะคะ', 'success');
+              UI_RENDERER.render();
+            }
+          );
+        },
+
+        // Admin: verify PIN (async)
+        async verifyAdminPin() {
+          const pin = document.getElementById('admin-pin-input').value;
+          const result = await PIN_GUARD.verify(pin);
+
+          if (result.success) {
+            STATE_STORE.set('adminAuthorized', true);
+            SESSION_MANAGER.reset();
+            UI_RENDERER.showToast('🔓 เข้าสู่ระบบแอดมินสำเร็จแล้วค่ะ', 'success');
+            UI_RENDERER.render();
+          } else if (result.locked) {
+            UI_RENDERER.showLockout(result.remainingMs);
+            UI_RENDERER.showToast('🔒 ป้อน PIN ผิดหลายครั้ง: ระบบล็อกชั่วคราวค่ะ', 'error');
+          } else {
+            document.getElementById('admin-pin-input').value = '';
+            UI_RENDERER.showAttemptsWarning(result.remainingAttempts);
+            UI_RENDERER.showToast(`❌ รหัส PIN ไม่ถูกต้อง (เหลือ ${result.remainingAttempts} ครั้ง)`, 'error');
+          }
+        },
+
+        // Admin: change PIN
+        async changeAdminPin() {
+          const current  = document.getElementById('change-pin-current').value;
+          const newPin   = document.getElementById('change-pin-new').value;
+          const confirm  = document.getElementById('change-pin-confirm').value;
+
+          if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+            UI_RENDERER.showToast('รหัส PIN ใหม่ต้องเป็นตัวเลข 4 หลักเท่านั้นค่ะ', 'error');
+            return;
+          }
+          if (newPin !== confirm) {
+            UI_RENDERER.showToast('รหัส PIN ใหม่ไม่ตรงกันค่ะ กรุณาตรวจสอบ', 'error');
+            return;
+          }
+
+          const result = await PIN_GUARD.changePin(current, newPin);
+          if (result.success) {
+            document.getElementById('change-pin-current').value = '';
+            document.getElementById('change-pin-new').value     = '';
+            document.getElementById('change-pin-confirm').value = '';
+            UI_RENDERER.showToast('🔑 เปลี่ยนรหัส PIN สำเร็จแล้วค่ะ', 'success');
+          } else if (result.locked) {
+            UI_RENDERER.showToast('🔒 ระบบล็อกชั่วคราวค่ะ', 'error');
+          } else {
+            UI_RENDERER.showToast(`❌ รหัส PIN ปัจจุบันไม่ถูกต้องค่ะ (เหลือ ${result.remainingAttempts} ครั้ง)`, 'error');
+          }
+        },
+
+        logoutAdmin() {
+          SESSION_MANAGER.clear();
+          STATE_STORE.set('adminAuthorized', false);
+          UI_RENDERER.showToast('🔒 ออกจากระบบแอดมินแล้วค่ะ', 'success');
+          UI_RENDERER.render();
+        },
+
+        approveReturn(id) {
+          const equipment = STATE_STORE.get('equipment');
+          const item = equipment.find(e => e.id === id);
+          if (!item) return;
+
+          UI_RENDERER.showCustomConfirm(
+            'ตรวจสภาพของเรียบร้อย?',
+            `ยืนยันว่าได้รับ ${item.name} คืนสภาพสมบูรณ์และพร้อมกลับเข้าคลัง?`,
+            'อนุมัติรับคืน',
+            async () => {
+              SESSION_MANAGER.reset();
+              const prev = item.currentBorrower;
+              const updatedItem = { ...item, status: 'available', currentBorrower: null, updatedAt: Date.now() };
+              await STORAGE_ENGINE.put('equipment', updatedItem);
+
+              const log = {
+                id: `log-${crypto.randomUUID()}`,
+                equipId: item.id, equipName: item.name,
+                empId:   prev?.empId  ?? 'unknown',
+                empName: prev?.name   ?? 'unknown',
+                action: 'ตรวจรับคืนสำเร็จ', timestamp: Date.now(),
+                comment: 'แอดมินกดยืนยันรับคืนเรียบร้อย'
+              };
+              await STORAGE_ENGINE.put('logs', log);
+
+              if (CLOUD_SYNC_MANAGER.active) {
+                await CLOUD_SYNC_MANAGER.syncItem('equipment', updatedItem);
+                await CLOUD_SYNC_MANAGER.syncItem('logs', log);
+              }
+
+              STATE_STORE.set('equipment',
+                STATE_STORE.get('equipment').map(e => e.id === id ? updatedItem : e)
+              );
+              UI_RENDERER.showToast(`🟢 อนุมัติรับคืน ${item.name} เรียบร้อยแล้วค่ะ`, 'success');
+              UI_RENDERER.render();
+            },
+            'shield-check'
+          );
+        },
+
+        async addEquipmentFromAdmin() {
+          SESSION_MANAGER.reset();
+          const nameField   = document.getElementById('new-equip-name');
+          const serialField = document.getElementById('new-equip-serial');
+          const name   = nameField.value.trim();
+          const serial = serialField.value.trim();
+
+          if (!name || !serial) {
+            UI_RENDERER.showToast('กรุณากรอกข้อมูลให้ครบถ้วนก่อนเพิ่มนะคะ', 'error');
+            return;
+          }
+
+          const newEquip = {
+            id: `radio-${Date.now()}`, name, serial,
+            status: 'available', currentBorrower: null, updatedAt: Date.now()
+          };
+          await STORAGE_ENGINE.put('equipment', newEquip);
+          if (CLOUD_SYNC_MANAGER.active) await CLOUD_SYNC_MANAGER.syncItem('equipment', newEquip);
+
+          STATE_STORE.set('equipment', [...STATE_STORE.get('equipment'), newEquip]);
+          nameField.value = '';
+          serialField.value = '';
+          UI_RENDERER.showToast(`เพิ่ม ${name} เข้าสู่ระบบสำเร็จแล้วค่ะ`, 'success');
+          UI_RENDERER.render();
+        },
+
+        deleteEquipmentFromAdmin(id) {
+          SESSION_MANAGER.reset();
+          const equipment = STATE_STORE.get('equipment');
+          const item = equipment.find(e => e.id === id);
+          if (!item) return;
+
+          UI_RENDERER.showCustomConfirm(
+            'ลบอุปกรณ์ออกจากคลัง?',
+            `คุณแน่ใจใช่ไหมว่าต้องการลบ ${item.name} ออกจากระบบถาวร?`,
+            'ลบถาวร',
+            async () => {
+              SESSION_MANAGER.reset();
+              await STORAGE_ENGINE.delete('equipment', id);
+              if (CLOUD_SYNC_MANAGER.active) await CLOUD_SYNC_MANAGER.deleteItem('equipment', id);
+              STATE_STORE.set('equipment', STATE_STORE.get('equipment').filter(e => e.id !== id));
+              UI_RENDERER.showToast('ลบรายการสำเร็จแล้วค่ะ', 'success');
+              UI_RENDERER.render();
+            },
+            'alert-triangle'
+          );
+        },
+
+        toggleCloudSync() {
+          const active = document.getElementById('cloud-sync-toggle').checked;
+          localStorage.setItem('radiosync_cloud_sync_active', String(active));
+          document.getElementById('cloud-config-box').classList.toggle('hidden', !active);
+          if (!active) {
+            CLOUD_SYNC_MANAGER.stopListening();
+            STATE_STORE.set('syncStatus', 'local');
+            UI_RENDERER.render();
+          }
+        },
+
+        async saveCloudFirebaseConfig() {
+          const configText = document.getElementById('cloud-firebase-config').value.trim();
+          if (!configText) {
+            UI_RENDERER.showToast('กรุณาวางค่า Firebase Config ที่ถูกต้องด้วยนะคะ', 'error');
+            return;
+          }
+          try {
+            const parsed = JSON.parse(configText);
+            const required = ['apiKey', 'authDomain', 'projectId'];
+            if (!required.every(k => typeof parsed[k] === 'string' && parsed[k])) {
+              throw new Error('Missing required Firebase config fields');
+            }
+            localStorage.setItem('radiosync_firebase_config', configText);
+            await CLOUD_SYNC_MANAGER.init(parsed);
+          } catch(e) {
+            const msg = e.message.includes('Firebase') ? e.message : 'รูปแบบ JSON ไม่ถูกต้องค่ะ กรุณาตรวจสอบวงเล็บปีกกาและเครื่องหมายคำพูด';
+            UI_RENDERER.showToast(msg, 'error');
+          }
+        },
+
+        async exportHistoryCSV() {
+          try {
+            const logs = await STORAGE_ENGINE.getAll('logs');
+            if (logs.length === 0) {
+              UI_RENDERER.showToast('ไม่มีประวัติการบันทึกให้ออกรายงานเลยค่ะ', 'error');
+              return;
+            }
+            logs.sort((a, b) => b.timestamp - a.timestamp);
+
+            let csv = '﻿';
+            csv += 'ลำดับ,วันเวลาทำรายการ,วิทยุสื่อสาร,ผู้ทำรายการ,รหัสพนักงาน,ประเภทรายการ,บันทึกเพิ่มเติม\n';
+
+            logs.forEach((log, i) => {
+              const d = new Intl.DateTimeFormat('th-TH', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', calendar: 'buddhist'
+              }).format(new Date(log.timestamp)).replace(/,/g, '');
+
+              const row = [i + 1, d, log.equipName, log.empName, `"${log.empId}"`, log.action, log.comment || '-']
+                .map(v => String(v).replace(/"/g, '""'))
+                .join(',');
+              csv += row + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url  = URL.createObjectURL(blob);
+            const a    = Object.assign(document.createElement('a'), {
+              href: url, download: `RadioSync_Report_${Date.now()}.csv`, style: 'display:none'
+            });
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            UI_RENDERER.showToast('ดาวน์โหลดรายงานประวัติ (CSV) สำเร็จ เปิดด้วย Excel ได้เลยค่ะ', 'success');
+          } catch(e) {
+            console.error('CSV export failed', e);
+            UI_RENDERER.showToast('ออกรายงานล้มเหลว', 'error');
+          }
+        },
+
+        clearLocalLogs() {
+          UI_RENDERER.showCustomConfirm(
+            'ยืนยันล้างประวัติ?',
+            'คุณแน่ใจใช่ไหมว่าต้องการล้างประวัติการยืมคืนในเครื่องทั้งหมด? (ไม่มีผลกระทบต่อวิทยุในคลัง)',
+            'ล้างข้อมูล',
+            async () => {
+              await STORAGE_ENGINE.clearStore('logs');
+              UI_RENDERER.showToast('ล้างประวัติเสร็จสิ้น', 'success');
+            },
+            'alert-triangle'
+          );
+        }
+      };
+    })();
+
+    window.addEventListener('load', () => APP_CORE.init());
+  </script>
+</body>
+</html>

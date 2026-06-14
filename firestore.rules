@@ -1,0 +1,29 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // RadioSync app data — path: artifacts/{appId}/public/data/{collection}/{doc}
+    match /artifacts/{appId}/public/data/{collection}/{docId} {
+
+      // Any anonymous-authenticated user can read all equipment and logs
+      allow read: if request.auth != null;
+
+      // Equipment: authenticated users can write (borrow/return handled by transactions in app)
+      allow write: if request.auth != null
+                   && collection == 'equipment'
+                   && request.resource.data.keys().hasAll(['id', 'name', 'serial', 'status', 'updatedAt'])
+                   && request.resource.data.status in ['available', 'borrowed', 'pending_return'];
+
+      // Logs: authenticated users can create only (no edit, no delete)
+      allow create: if request.auth != null && collection == 'logs'
+                    && request.resource.data.keys().hasAll(['id', 'equipId', 'empId', 'action', 'timestamp']);
+      allow update, delete: if false;
+    }
+
+    // Block everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

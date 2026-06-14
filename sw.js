@@ -1,7 +1,7 @@
 'use strict';
 
-const CACHE_NAME = 'radiosync-v2';
-const STATIC_ASSETS = ['./', './index.html', './manifest.json'];
+const CACHE_NAME = 'radiosync-v3';
+const STATIC_ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

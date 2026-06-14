@@ -439,6 +439,50 @@
     </div>
   </div>
 
+  <!-- EDIT EQUIPMENT DRAWER -->
+  <div id="edit-drawer" class="fixed inset-0 z-50 invisible transition-all duration-300 flex flex-col justify-end">
+    <div onclick="UI_RENDERER.closeEditDrawer()" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="relative glass bg-surface-card rounded-t-2xl rounded-b-none border-b-0 max-w-md mx-auto w-full px-6 py-6 space-y-6 transform translate-y-full transition-transform duration-300" id="edit-drawer-sheet">
+
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+            <i data-lucide="pencil" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-medium text-lg text-white">แก้ไขข้อมูลวิทยุ</h3>
+            <p class="text-[10px] text-amber-400 font-semibold uppercase">Edit Equipment</p>
+          </div>
+        </div>
+        <button onclick="UI_RENDERER.closeEditDrawer()" class="p-1.5 hover:bg-white/5 rounded-full transition btn-active">
+          <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+        </button>
+      </div>
+
+      <input type="hidden" id="edit-equip-id" />
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs text-gray-400 font-medium mb-1.5">ชื่อเครื่องย่อ <span class="text-red-400">*</span></label>
+          <input type="text" id="edit-equip-name" placeholder="Radio No.XX"
+            class="w-full bg-surface-raised border border-white/10 hover:border-white/20 focus:border-brand rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none transition" />
+          <span id="err-edit-name" class="hidden text-xs text-red-400 mt-1 block">กรุณากรอกชื่อเครื่อง</span>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 font-medium mb-1.5">หมายเลขเฉพาะเครื่อง (Serial / ID) <span class="text-red-400">*</span></label>
+          <input type="text" id="edit-equip-serial" placeholder="400105"
+            class="w-full bg-surface-raised border border-white/10 hover:border-white/20 focus:border-brand rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none transition" />
+          <span id="err-edit-serial" class="hidden text-xs text-red-400 mt-1 block">กรุณากรอกหมายเลขเครื่อง</span>
+        </div>
+      </div>
+
+      <button onclick="APP_CORE.submitEquipmentEdit()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium text-sm py-3.5 rounded-xl transition duration-220 shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 btn-active">
+        <i data-lucide="save" class="w-4 h-4"></i>
+        บันทึกการแก้ไข
+      </button>
+    </div>
+  </div>
+
   <!-- TOAST -->
   <div id="toast-container" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-xs px-4 pointer-events-none"></div>
 
@@ -1026,6 +1070,24 @@
 
         get selectedEquipment() { return _selectedEquip; },
 
+        openEditDrawer(item) {
+          document.getElementById('edit-equip-id').value    = item.id;
+          document.getElementById('edit-equip-name').value  = item.name;
+          document.getElementById('edit-equip-serial').value = item.serial;
+          document.getElementById('err-edit-name').classList.add('hidden');
+          document.getElementById('err-edit-serial').classList.add('hidden');
+          const drawer = document.getElementById('edit-drawer');
+          const sheet  = document.getElementById('edit-drawer-sheet');
+          drawer.classList.remove('invisible');
+          setTimeout(() => sheet.classList.remove('translate-y-full'), 10);
+        },
+
+        closeEditDrawer() {
+          const sheet = document.getElementById('edit-drawer-sheet');
+          sheet.classList.add('translate-y-full');
+          setTimeout(() => document.getElementById('edit-drawer').classList.add('invisible'), 200);
+        },
+
         showLockout(remainingMs) {
           const lockEl     = document.getElementById('admin-lockout-msg');
           const attemptsEl = document.getElementById('admin-attempts-msg');
@@ -1253,10 +1315,14 @@
                       <span class="text-xs font-semibold text-white">${_esc(item.name)}</span>
                       <span class="text-[9px] text-gray-500">(${_esc(item.serial)})</span>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1.5">
                       ${badge}
+                      <button onclick="APP_CORE.openEquipmentEdit('${_esc(item.id)}')"
+                        class="p-1 hover:bg-white/5 text-gray-500 hover:text-amber-400 rounded transition btn-active" title="แก้ไข">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                      </button>
                       <button onclick="APP_CORE.deleteEquipmentFromAdmin('${_esc(item.id)}')"
-                        class="p-1 hover:bg-white/5 text-gray-500 hover:text-red-400 rounded transition btn-active">
+                        class="p-1 hover:bg-white/5 text-gray-500 hover:text-red-400 rounded transition btn-active" title="ลบ">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                       </button>
                     </div>
@@ -1586,6 +1652,41 @@
           serialField.value = '';
           UI_RENDERER.showToast(`เพิ่ม ${name} เข้าสู่ระบบสำเร็จแล้วค่ะ`, 'success');
           UI_RENDERER.render();
+        },
+
+        openEquipmentEdit(id) {
+          SESSION_MANAGER.reset();
+          const item = STATE_STORE.get('equipment').find(e => e.id === id);
+          if (item) UI_RENDERER.openEditDrawer(item);
+        },
+
+        async submitEquipmentEdit() {
+          SESSION_MANAGER.reset();
+          const id     = document.getElementById('edit-equip-id').value;
+          const name   = document.getElementById('edit-equip-name').value.trim();
+          const serial = document.getElementById('edit-equip-serial').value.trim();
+
+          document.getElementById('err-edit-name').classList.toggle('hidden', name !== '');
+          document.getElementById('err-edit-serial').classList.toggle('hidden', serial !== '');
+          if (!name || !serial) return;
+
+          const equipment = STATE_STORE.get('equipment');
+          const item = equipment.find(e => e.id === id);
+          if (!item) return;
+
+          const updatedItem = { ...item, name, serial, updatedAt: Date.now() };
+
+          try {
+            await STORAGE_ENGINE.put('equipment', updatedItem);
+            if (CLOUD_SYNC_MANAGER.active) await CLOUD_SYNC_MANAGER.syncItem('equipment', updatedItem);
+            STATE_STORE.set('equipment', equipment.map(e => e.id === id ? updatedItem : e));
+            UI_RENDERER.closeEditDrawer();
+            UI_RENDERER.showToast(`✏️ แก้ไข ${name} สำเร็จแล้วค่ะ`, 'success');
+            UI_RENDERER.render();
+          } catch(e) {
+            console.error('Edit equipment failed', e);
+            UI_RENDERER.showToast('แก้ไขล้มเหลว กรุณาลองใหม่ค่ะ', 'error');
+          }
         },
 
         deleteEquipmentFromAdmin(id) {

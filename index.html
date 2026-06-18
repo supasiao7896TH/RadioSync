@@ -280,14 +280,29 @@
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-cols-2 gap-3">
-          <div class="bg-surface-card border border-white/5 rounded-xl p-4 flex flex-col justify-between h-24">
-            <span class="text-xs text-gray-400 font-medium">อุปกรณ์ทั้งหมด</span>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-surface-card border border-white/5 rounded-xl p-3 flex flex-col justify-between h-24">
+            <span class="text-[11px] text-gray-400 font-medium leading-tight">อุปกรณ์ทั้งหมด</span>
             <span id="admin-stat-total" class="font-display text-2xl font-bold text-white">0</span>
           </div>
-          <div class="bg-surface-card border border-white/5 rounded-xl p-4 flex flex-col justify-between h-24">
-            <span class="text-xs text-gray-400 font-medium">ยืมอยู่ / รอยืนยัน</span>
+          <div class="bg-surface-card border border-white/5 rounded-xl p-3 flex flex-col justify-between h-24">
+            <span class="text-[11px] text-gray-400 font-medium leading-tight">ยืมอยู่ / รอยืนยัน</span>
             <span id="admin-stat-borrowed" class="font-display text-2xl font-bold text-brand-light">0</span>
+          </div>
+          <div class="bg-surface-card border border-red-500/20 rounded-xl p-3 flex flex-col justify-between h-24">
+            <span class="text-[11px] text-gray-400 font-medium leading-tight">เกินกำหนด</span>
+            <span id="admin-stat-overdue" class="font-display text-2xl font-bold text-red-400">0</span>
+          </div>
+        </div>
+
+        <!-- Overdue threshold setting -->
+        <div class="bg-surface-card border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+          <span class="text-xs text-gray-400 font-medium">แจ้งเตือน "เกินกำหนด" เมื่อยืมเกิน</span>
+          <div class="flex items-center gap-2 shrink-0">
+            <input type="number" id="overdue-days-input" min="1" max="365"
+              onchange="APP_CORE.setOverdueDays(this.value)"
+              class="w-16 bg-surface-raised border border-white/10 focus:border-brand rounded-lg px-2 py-1.5 text-xs text-white text-center focus:outline-none transition" />
+            <span class="text-xs text-gray-400">วัน</span>
           </div>
         </div>
 
@@ -342,7 +357,11 @@
             <i data-lucide="file-spreadsheet" class="w-4 h-4 text-green-400"></i>
             รายงานประวัติส่งต่อ Microsoft Office 365
           </h3>
-          <p class="text-xs text-gray-400 leading-relaxed">ดาวน์โหลดประวัติการยืม-คืนทั้งหมดเป็นไฟล์ Excel (CSV)</p>
+          <p class="text-xs text-gray-400 leading-relaxed">ดูประวัติในแอป หรือดาวน์โหลดเป็นไฟล์ Excel (CSV)</p>
+          <button onclick="APP_CORE.openHistory()" class="w-full bg-brand/20 hover:bg-brand/30 text-brand-light font-medium text-xs py-2.5 rounded-lg border border-brand/30 flex items-center justify-center gap-1.5 transition btn-active">
+            <i data-lucide="history" class="w-3.5 h-3.5"></i>
+            📜 ดูประวัติในแอป
+          </button>
           <div class="flex gap-2">
             <button onclick="APP_CORE.exportHistoryCSV()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium text-xs py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition btn-active">
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
@@ -511,6 +530,38 @@
         <i data-lucide="check" class="w-4 h-4"></i>
         <span id="override-confirm-label">ยืนยัน</span>
       </button>
+    </div>
+  </div>
+
+  <!-- HISTORY DRAWER (in-app audit log viewer) -->
+  <div id="history-drawer" class="fixed inset-0 z-50 invisible transition-all duration-300 flex flex-col justify-end">
+    <div onclick="UI_RENDERER.closeHistory()" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="relative glass bg-surface-card rounded-t-2xl rounded-b-none border-b-0 max-w-md mx-auto w-full max-h-[90vh] flex flex-col px-6 py-6 transform translate-y-full transition-transform duration-300" id="history-sheet">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center">
+            <i data-lucide="history" class="w-4 h-4 text-brand-light"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-medium text-lg text-white">ประวัติการทำรายการ</h3>
+            <p class="text-[10px] text-brand-light font-semibold uppercase">Activity History</p>
+          </div>
+        </div>
+        <button onclick="UI_RENDERER.closeHistory()" class="p-1.5 hover:bg-white/5 rounded-full transition btn-active">
+          <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+        </button>
+      </div>
+      <div class="pt-4 space-y-3 shrink-0">
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="history-search" oninput="APP_CORE.applyHistoryFilter()" placeholder="ค้นหาเครื่อง / ชื่อ / รหัสพนักงาน"
+            class="w-full bg-surface-raised border border-white/10 focus:border-brand rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none transition" />
+        </div>
+        <div id="history-chips" class="flex gap-1.5 flex-wrap"></div>
+      </div>
+      <div id="history-list" class="mt-4 space-y-2 overflow-y-auto pr-1 flex-1">
+        <div class="text-center py-8 text-xs text-gray-500">กำลังโหลด...</div>
+      </div>
     </div>
   </div>
 
@@ -1128,6 +1179,16 @@
           }
         },
 
+        // Fetch all docs in a collection from cloud (on-demand, no listener)
+        async fetchAll(colName) {
+          if (!_active || !_fs) return [];
+          const { getDocs } = window.FirebaseLib;
+          const snap = await getDocs(_colPath(colName));
+          const out = [];
+          snap.forEach(d => out.push(d.data()));
+          return out;
+        },
+
         get active() { return _active; }
       };
     })();
@@ -1203,6 +1264,29 @@
         }).format(new Date(ts));
       }
 
+      // Overdue helpers
+      function _overdueDays() {
+        const v = parseInt(localStorage.getItem('radiosync_overdue_days'), 10);
+        return (Number.isFinite(v) && v > 0) ? v : 3;
+      }
+
+      function _durationText(borrowedAt) {
+        if (!borrowedAt) return '';
+        const ms = Date.now() - borrowedAt;
+        if (ms < 0) return '';
+        const days  = Math.floor(ms / 86400000);
+        const hours = Math.floor((ms % 86400000) / 3600000);
+        if (days > 0)  return `${days} วัน ${hours} ชม.`;
+        const mins = Math.floor((ms % 3600000) / 60000);
+        if (hours > 0) return `${hours} ชม. ${mins} นาที`;
+        return `${mins} นาที`;
+      }
+
+      function _isOverdue(borrowedAt) {
+        if (!borrowedAt) return false;
+        return (Date.now() - borrowedAt) >= _overdueDays() * 86400000;
+      }
+
       function _startLockoutCountdown(remainingMs) {
         if (_lockoutInterval) clearInterval(_lockoutInterval);
         const el = document.getElementById('admin-lockout-countdown');
@@ -1225,6 +1309,8 @@
       }
 
       return {
+        esc: _esc,
+
         showToast(message, type = 'success') {
           const container = document.getElementById('toast-container');
           const id = `toast-${_toastCount++}`;
@@ -1370,6 +1456,21 @@
           setTimeout(() => {
             document.getElementById('admin-override-drawer').classList.add('invisible');
             this.overrideTarget = null;
+          }, 200);
+        },
+
+        openHistoryDrawer() {
+          const drawer = document.getElementById('history-drawer');
+          const sheet  = document.getElementById('history-sheet');
+          drawer.classList.remove('invisible');
+          setTimeout(() => sheet.classList.remove('translate-y-full'), 10);
+        },
+
+        closeHistory() {
+          const sheet = document.getElementById('history-sheet');
+          sheet.classList.add('translate-y-full');
+          setTimeout(() => {
+            document.getElementById('history-drawer').classList.add('invisible');
           }, 200);
         },
 
@@ -1575,6 +1676,12 @@
               document.getElementById('admin-stat-total').textContent = equipment.length;
               document.getElementById('admin-stat-borrowed').textContent =
                 equipment.filter(e => e.status !== 'available').length;
+              document.getElementById('admin-stat-overdue').textContent =
+                equipment.filter(e => e.status !== 'available' && _isOverdue(e.currentBorrower?.borrowedAt)).length;
+
+              // Reflect current overdue threshold in the settings input
+              const odInput = document.getElementById('overdue-days-input');
+              if (odInput && document.activeElement !== odInput) odInput.value = _overdueDays();
 
               // Update notification bell icon
               const notifGranted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
@@ -1615,21 +1722,39 @@
                       </button>
                     </div>`).join('');
 
-              // Inventory list
+              // Inventory list — sort longest-borrowed (incl. overdue) to the top
               const invContainer = document.getElementById('admin-inventory-list');
-              invContainer.innerHTML = equipment.map(item => {
+              const invSorted = [...equipment].sort((a, b) => {
+                const aT = a.currentBorrower?.borrowedAt, bT = b.currentBorrower?.borrowedAt;
+                if (aT && bT) return aT - bT;
+                if (aT) return -1;
+                if (bT) return 1;
+                return 0;
+              });
+              invContainer.innerHTML = invSorted.map(item => {
                 const badge =
                   item.status === 'available'      ? `<span class="text-[9px] bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded">ว่าง</span>`     :
                   item.status === 'pending_return' ? `<span class="text-[9px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded">รอคืน</span>`    :
                                                      `<span class="text-[9px] bg-red-500/10   text-red-400   px-1.5 py-0.5 rounded">ยืมอยู่</span>`;
+                const borrowedAt = item.currentBorrower?.borrowedAt;
+                const isOut      = item.status === 'borrowed' || item.status === 'pending_return';
+                const overdue    = isOut && _isOverdue(borrowedAt);
+                const durLine    = isOut && borrowedAt
+                  ? `<span class="text-[9px] ${overdue ? 'text-red-400 font-semibold' : 'text-gray-500'}">${overdue ? '⚠️ ' : '🕒 '}ยืมมา ${_durationText(borrowedAt)}</span>`
+                  : '';
                 return `
-                  <div class="bg-surface-raised border border-white/5 rounded-lg px-3 py-2 flex items-center justify-between">
-                    <div class="flex items-center gap-2.5">
-                      <i data-lucide="radio" class="w-4 h-4 text-gray-400"></i>
-                      <span class="text-xs font-semibold text-white">${_esc(item.name)}</span>
-                      <span class="text-[9px] text-gray-500">(${_esc(item.serial)})</span>
+                  <div class="bg-surface-raised border ${overdue ? 'border-red-500/40' : 'border-white/5'} rounded-lg px-3 py-2 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <i data-lucide="radio" class="w-4 h-4 text-gray-400 shrink-0"></i>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs font-semibold text-white truncate">${_esc(item.name)}</span>
+                          <span class="text-[9px] text-gray-500 shrink-0">(${_esc(item.serial)})</span>
+                        </div>
+                        ${durLine}
+                      </div>
                     </div>
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1.5 shrink-0">
                       ${badge}
                       ${(item.status === 'borrowed' || item.status === 'pending_return') ? `
                       <button onclick="APP_CORE.openForceRecall('${_esc(item.id)}')"
@@ -1669,6 +1794,16 @@
     // ─────────────────────────────────────────────────────────────────────────
     const APP_CORE = (() => {
       const _borrowingLocks = new Set(); // Prevent double-tap race on same device
+      let _historyCache  = [];           // In-app history viewer: loaded logs
+      let _historyFilter = 'all';        // Active action-type filter
+
+      const HISTORY_FILTERS = [
+        { key: 'all',    label: 'ทั้งหมด' },
+        { key: 'ยืม',     label: '📻 ยืม',   match: a => a.includes('ยืมอุปกรณ์') },
+        { key: 'คืน',     label: '✅ คืน',   match: a => a.includes('ตรวจรับคืน') || a.includes('ส่งคืน') },
+        { key: 'force',  label: '🔄 เรียกคืน', match: a => a.includes('เรียกคืน') },
+        { key: 'โอน',     label: '👤 โอน',   match: a => a.includes('โอนเครื่อง') },
+      ];
 
       async function _seed() {
         try {
@@ -1952,6 +2087,101 @@
             },
             'shield-check'
           );
+        },
+
+        setOverdueDays(val) {
+          SESSION_MANAGER.reset();
+          let n = parseInt(val, 10);
+          if (!Number.isFinite(n) || n < 1)  n = 1;
+          if (n > 365) n = 365;
+          localStorage.setItem('radiosync_overdue_days', String(n));
+          UI_RENDERER.showToast(`ตั้งเกณฑ์เกินกำหนดเป็น ${n} วันแล้วค่ะ`, 'success');
+          UI_RENDERER.render();
+        },
+
+        // ── In-app history viewer ──────────────────────────────────────────
+        async openHistory() {
+          SESSION_MANAGER.reset();
+          UI_RENDERER.openHistoryDrawer();
+          document.getElementById('history-search').value = '';
+          _historyFilter = 'all';
+          this._renderHistoryChips();
+          document.getElementById('history-list').innerHTML =
+            '<div class="text-center py-8 text-xs text-gray-500">กำลังโหลด...</div>';
+          try {
+            let logs;
+            if (CLOUD_SYNC_MANAGER.active) {
+              logs = await CLOUD_SYNC_MANAGER.fetchAll('logs');
+            } else {
+              logs = await STORAGE_ENGINE.getAll('logs');
+            }
+            _historyCache = (logs || []).sort((a, b) => b.timestamp - a.timestamp);
+          } catch(e) {
+            console.error('Load history failed', e);
+            _historyCache = await STORAGE_ENGINE.getAll('logs').catch(() => []);
+            _historyCache.sort((a, b) => b.timestamp - a.timestamp);
+          }
+          this.applyHistoryFilter();
+        },
+
+        _renderHistoryChips() {
+          const wrap = document.getElementById('history-chips');
+          wrap.innerHTML = HISTORY_FILTERS.map(f => {
+            const active = f.key === _historyFilter;
+            return `<button onclick="APP_CORE.setHistoryFilter('${f.key}')"
+              class="text-[10px] px-2.5 py-1 rounded-full border transition btn-active ${
+                active ? 'bg-brand/20 border-brand/40 text-brand-light' : 'bg-surface-raised border-white/10 text-gray-400 hover:text-white'
+              }">${f.label}</button>`;
+          }).join('');
+          if (window.lucide) lucide.createIcons();
+        },
+
+        setHistoryFilter(key) {
+          _historyFilter = key;
+          this._renderHistoryChips();
+          this.applyHistoryFilter();
+        },
+
+        applyHistoryFilter() {
+          const search = (document.getElementById('history-search')?.value || '').toLowerCase().trim();
+          const fdef   = HISTORY_FILTERS.find(f => f.key === _historyFilter);
+          let rows = _historyCache;
+          if (fdef && fdef.match) rows = rows.filter(l => fdef.match(l.action || ''));
+          if (search) {
+            rows = rows.filter(l =>
+              (l.equipName || '').toLowerCase().includes(search) ||
+              (l.empName   || '').toLowerCase().includes(search) ||
+              (l.empId     || '').toLowerCase().includes(search)
+            );
+          }
+          const list = document.getElementById('history-list');
+          if (!rows.length) {
+            list.innerHTML = `<div class="text-center py-8 text-xs text-gray-500 space-y-1">
+              <i data-lucide="inbox" class="w-6 h-6 mx-auto text-gray-600"></i>
+              <p>ไม่พบประวัติที่ตรงเงื่อนไข</p></div>`;
+            if (window.lucide) lucide.createIcons();
+            return;
+          }
+          list.innerHTML = rows.map(l => {
+            const a = l.action || '';
+            const color =
+              a.includes('ยืมอุปกรณ์')                       ? 'text-red-400 bg-red-500/10' :
+              a.includes('ตรวจรับคืน') || a.includes('ส่งคืน') ? 'text-green-400 bg-green-500/10' :
+              a.includes('เรียกคืน')                          ? 'text-orange-400 bg-orange-500/10' :
+              a.includes('โอนเครื่อง')                         ? 'text-blue-400 bg-blue-500/10' :
+                                                              'text-gray-400 bg-white/5';
+            return `
+              <div class="bg-surface-raised border border-white/5 rounded-lg px-3 py-2.5 space-y-1">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[10px] px-2 py-0.5 rounded-full font-medium ${color}">${UI_RENDERER.esc(a)}</span>
+                  <span class="text-[9px] text-gray-500 shrink-0">${_thaiDate(l.timestamp)}</span>
+                </div>
+                <p class="text-xs text-white font-medium">${UI_RENDERER.esc(l.equipName || '-')}</p>
+                <p class="text-[10px] text-gray-400">รหัส ${UI_RENDERER.esc(l.empId || '-')} — ${UI_RENDERER.esc(l.empName || '-')}</p>
+                ${l.comment && l.comment !== '-' ? `<p class="text-[10px] text-gray-500 italic">${UI_RENDERER.esc(l.comment)}</p>` : ''}
+              </div>`;
+          }).join('');
+          if (window.lucide) lucide.createIcons();
         },
 
         openForceRecall(id) {

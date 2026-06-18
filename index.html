@@ -96,45 +96,20 @@
 
 <body class="bg-surface-page text-gray-100 font-sans min-h-screen flex flex-col antialiased">
 
-  <!-- LINE / In-App Browser Warning (full-screen overlay) -->
-  <div id="inapp-warning" class="hidden fixed inset-0 z-[999] bg-surface-page flex flex-col items-center justify-center px-6 text-center">
-    <div class="space-y-5 max-w-xs w-full">
-      <div class="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto">
-        <i data-lucide="alert-triangle" class="w-8 h-8 text-red-400"></i>
-      </div>
-      <div>
-        <h2 class="font-display text-xl font-semibold text-white mb-2">ไม่สามารถใช้งานได้</h2>
-        <p class="text-sm text-gray-400 leading-relaxed">ระบบไม่รองรับการเปิดผ่าน <strong class="text-white">LINE Browser</strong><br>กรุณาเปิดลิงค์ใน <strong class="text-white">Chrome</strong> หรือ <strong class="text-white">Safari</strong></p>
-      </div>
-      <div class="glass p-4 text-left space-y-3">
-        <p class="text-[10px] text-brand-light tracking-widest uppercase font-semibold">วิธีเปิดใน Chrome / Safari</p>
-        <div class="flex gap-2.5 items-start">
-          <span class="w-5 h-5 rounded-full bg-brand flex items-center justify-center shrink-0 text-[10px] font-bold text-white mt-0.5">1</span>
-          <p class="text-sm text-gray-300">กดปุ่ม <strong class="text-white">⋯ (3 จุด)</strong> มุมขวาบนของ LINE</p>
-        </div>
-        <div class="flex gap-2.5 items-start">
-          <span class="w-5 h-5 rounded-full bg-brand flex items-center justify-center shrink-0 text-[10px] font-bold text-white mt-0.5">2</span>
-          <p class="text-sm text-gray-300">เลือก <strong class="text-white">"เปิดใน Browser"</strong> หรือ <strong class="text-white">"Open in Chrome"</strong></p>
-        </div>
-        <div class="flex gap-2.5 items-start">
-          <span class="w-5 h-5 rounded-full bg-brand flex items-center justify-center shrink-0 text-[10px] font-bold text-white mt-0.5">3</span>
-          <p class="text-sm text-gray-300">หน้าเว็บจะเปิดใน Chrome และใช้งานได้ปกติ</p>
-        </div>
-      </div>
-      <p class="text-xs text-gray-500">หรือคัดลอก URL แล้ววางใน Chrome โดยตรง</p>
-    </div>
+  <!-- LINE soft banner (non-blocking) — hidden by default, shown if LINE UA detected -->
+  <div id="line-banner" class="hidden bg-amber-500/10 border-b border-amber-500/20 text-amber-200 text-xs text-center py-2 px-4 flex items-center justify-center gap-1.5">
+    <i data-lucide="smartphone" class="w-3 h-3 shrink-0"></i>
+    <span>ถ้าเชื่อมต่อไม่ได้ กด <strong>⋯</strong> มุมขวาบน → <strong>"เปิดใน Chrome"</strong></span>
   </div>
 
   <script>
-    // Detect LINE / Facebook / Instagram in-app browsers immediately
+    // Show soft LINE hint banner — does NOT block the page (inMemoryPersistence handles auth)
     (function () {
       var ua = navigator.userAgent || '';
-      var isInApp = /Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) || /Instagram/i.test(ua);
-      if (isInApp) {
+      if (/Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) || /Instagram/i.test(ua)) {
         document.addEventListener('DOMContentLoaded', function () {
-          var el = document.getElementById('inapp-warning');
+          var el = document.getElementById('line-banner');
           if (el) el.classList.remove('hidden');
-          if (window.lucide) lucide.createIcons();
         });
       }
     })();
@@ -665,7 +640,7 @@
   <!-- Firebase Modular Imports -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, inMemoryPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
     import {
       getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
       onSnapshot, collection, getDocs, runTransaction
@@ -674,6 +649,7 @@
 
     window.FirebaseLib = {
       initializeApp, getAuth, signInAnonymously, onAuthStateChanged,
+      inMemoryPersistence, setPersistence,
       getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
       onSnapshot, collection, getDocs, runTransaction,
       getMessaging, getToken,
@@ -937,11 +913,15 @@
       async function _initFirebase(config) {
         if (!window.FirebaseLib) return false;
         try {
-          const { initializeApp, getAuth, signInAnonymously, getFirestore, getMessaging } = window.FirebaseLib;
+          const { initializeApp, getAuth, signInAnonymously, getFirestore, getMessaging,
+                  inMemoryPersistence, setPersistence } = window.FirebaseLib;
           const app = initializeApp(config);
           _fs        = getFirestore(app);
           _auth      = getAuth(app);
           _messaging = getMessaging(app);
+          // Use in-memory persistence so auth works in LINE/Facebook WebViews
+          // that block IndexedDB (the default browserLocalPersistence storage)
+          await setPersistence(_auth, inMemoryPersistence);
           // Retry signInAnonymously up to 3 times with backoff
           for (let attempt = 1; attempt <= 3; attempt++) {
             try {
@@ -1343,6 +1323,8 @@
           glow.className = `w-2.5 h-2.5 rounded-full ${s.cls}`;
           txt.textContent = s.label;
           offlineBanner?.classList.toggle('hidden', s.offline || sync === 'online');
+          // Hide LINE soft banner once connected successfully
+          if (sync === 'online') document.getElementById('line-banner')?.classList.add('hidden');
 
           // User card
           const userCard = document.getElementById('active-user-container');

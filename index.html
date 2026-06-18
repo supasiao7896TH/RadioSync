@@ -97,21 +97,59 @@
 <body class="bg-surface-page text-gray-100 font-sans min-h-screen flex flex-col antialiased">
 
   <!-- LINE soft banner (non-blocking) — hidden by default, shown if LINE UA detected -->
-  <div id="line-banner" class="hidden bg-amber-500/10 border-b border-amber-500/20 text-amber-200 text-xs text-center py-2 px-4 flex items-center justify-center gap-1.5">
+  <div id="line-banner" class="hidden bg-amber-500/10 border-b border-amber-500/20 text-amber-200 text-xs py-2 px-4 flex items-center justify-center gap-2 flex-wrap">
     <i data-lucide="smartphone" class="w-3 h-3 shrink-0"></i>
-    <span>ถ้าเชื่อมต่อไม่ได้ กด <strong>⋯</strong> มุมขวาบน → <strong>"เปิดใน Chrome"</strong></span>
+    <span id="line-banner-msg"></span>
+    <button id="line-copy-btn" onclick="copyAppLink()" class="shrink-0 inline-flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-100 px-2 py-0.5 rounded-full transition btn-active">
+      <i data-lucide="copy" class="w-3 h-3"></i>
+      <span id="line-copy-label">คัดลอกลิงก์</span>
+    </button>
   </div>
 
   <script>
+    // Copy current URL so users can paste it into a real browser (Safari/Chrome)
+    function copyAppLink() {
+      var url   = window.location.href;
+      var label = document.getElementById('line-copy-label');
+      var done  = function () {
+        if (!label) return;
+        label.textContent = 'คัดลอกแล้ว ✓';
+        setTimeout(function () { label.textContent = 'คัดลอกลิงก์'; }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(done).catch(function () { _fallbackCopy(url, done); });
+      } else {
+        _fallbackCopy(url, done);
+      }
+    }
+    function _fallbackCopy(text, cb) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity  = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        cb && cb();
+      } catch (e) {}
+    }
+
     // Show soft LINE hint banner — does NOT block the page (inMemoryPersistence handles auth)
     (function () {
       var ua = navigator.userAgent || '';
-      if (/Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) || /Instagram/i.test(ua)) {
-        document.addEventListener('DOMContentLoaded', function () {
-          var el = document.getElementById('line-banner');
-          if (el) el.classList.remove('hidden');
-        });
-      }
+      var isInApp = /Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) || /Instagram/i.test(ua);
+      if (!isInApp) return;
+      var isIOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && 'ontouchend' in document);
+      document.addEventListener('DOMContentLoaded', function () {
+        var msg = document.getElementById('line-banner-msg');
+        if (msg) msg.innerHTML = isIOS
+          ? 'iPhone: คัดลอกลิงก์แล้ววางใน <strong>Safari</strong> (หรือกด <strong>⋯</strong> → <strong>"เปิดด้วย Safari"</strong>)'
+          : 'ถ้าเชื่อมต่อไม่ได้ กด <strong>⋯</strong> มุมขวาบน → <strong>"เปิดใน Chrome"</strong>';
+        var el = document.getElementById('line-banner');
+        if (el) el.classList.remove('hidden');
+      });
     })();
   </script>
 

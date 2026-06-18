@@ -45,7 +45,7 @@ self.addEventListener('notificationclick', event => {
 
 // ─── App-shell cache ──────────────────────────────────────────────────────────
 
-const CACHE_NAME   = 'radiosync-v7';
+const CACHE_NAME   = 'radiosync-v8';
 const STATIC_ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {

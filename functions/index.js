@@ -46,12 +46,12 @@ exports.notifyAdminOnEquipmentChange = onDocumentUpdated(
       notification: { title, body },
       webpush: {
         notification: {
-          icon:  'https://supasiao7896th.github.io/RadioSync/icon-192.png',
-          badge: 'https://supasiao7896th.github.io/RadioSync/icon-192.png',
+          icon:  'https://supasiao7896th.github.io/PE1-Walkie-Talkie-Borrow/icon-192.png',
+          badge: 'https://supasiao7896th.github.io/PE1-Walkie-Talkie-Borrow/icon-192.png',
           requireInteraction: false,
         },
         fcmOptions: {
-          link: 'https://supasiao7896th.github.io/RadioSync/',
+          link: 'https://supasiao7896th.github.io/PE1-Walkie-Talkie-Borrow/',
         },
       },
     });

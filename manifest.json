@@ -1,7 +1,7 @@
 {
-  "name": "A-Class RadioSync",
-  "short_name": "RadioSync",
-  "description": "ระบบยืม-คืนวิทยุสื่อสารอัจฉริยะ",
+  "name": "PE1 Walkie Talkie Borrow",
+  "short_name": "WalkieTalkie",
+  "description": "ระบบยืม-คืนวิทยุสื่อสาร แผนกผลิต 1",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

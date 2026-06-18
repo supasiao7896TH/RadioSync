@@ -1,4 +1,4 @@
-# CLAUDE.md — RadioSync Project Guide
+# CLAUDE.md — PE1 Walkie Talkie Borrow Project Guide
 
 คู่มือนี้ให้ Claude อ่านก่อนเริ่มงานทุกครั้ง เพื่อให้เข้าใจโครงสร้างและขั้นตอนที่ถูกต้องโดยไม่ต้องอธิบายซ้ำ
 
@@ -6,8 +6,8 @@
 
 ## ภาพรวมโปรเจกต์
 
-**RadioSync** คือระบบยืม-คืนวิทยุสื่อสารสำหรับองค์กร ทำงานเป็น PWA (Progressive Web App)
-- URL: `https://supasiao7896th.github.io/RadioSync/`
+**PE1 Walkie Talkie Borrow** คือระบบยืม-คืนวิทยุสื่อสารสำหรับแผนกผลิต 1 ทำงานเป็น PWA (Progressive Web App)
+- URL: `https://supasiao7896th.github.io/PE1-Walkie-Talkie-Borrow/`
 - ภาษาของ UI: **ภาษาไทย**
 - รูปแบบ: Single-page app — โค้ดทั้งหมดอยู่ใน `index.html` ไฟล์เดียว
 
@@ -32,7 +32,7 @@
 ## โครงสร้างไฟล์
 
 ```
-RadioSync/
+PE1-Walkie-Talkie-Borrow/
 ├── index.html          ← แอปทั้งหมด (UI + logic รวมกัน)
 ├── sw.js               ← Service Worker: cache + FCM background handler
 ├── manifest.json       ← PWA metadata

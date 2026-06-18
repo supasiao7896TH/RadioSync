@@ -96,6 +96,50 @@
 
 <body class="bg-surface-page text-gray-100 font-sans min-h-screen flex flex-col antialiased">
 
+  <!-- LINE / In-App Browser Warning (full-screen overlay) -->
+  <div id="inapp-warning" class="hidden fixed inset-0 z-[999] bg-surface-page flex flex-col items-center justify-center px-6 text-center">
+    <div class="space-y-5 max-w-xs w-full">
+      <div class="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto">
+        <i data-lucide="alert-triangle" class="w-8 h-8 text-red-400"></i>
+      </div>
+      <div>
+        <h2 class="font-display text-xl font-semibold text-white mb-2">ไม่สามารถใช้งานได้</h2>
+        <p class="text-sm text-gray-400 leading-relaxed">ระบบไม่รองรับการเปิดผ่าน <strong class="text-white">LINE Browser</strong><br>กรุณาเปิดลิงค์ใน <strong class="text-white">Chrome</strong> หรือ <strong class="text-white">Safari</strong></p>
+      </div>
+      <div class="glass p-4 text-left space-y-3">
+        <p class="text-[10px] text-brand-light tracking-widest uppercase font-semibold">วิธีเปิดใน Chrome / Safari</p>
+        <div class="flex gap-2.5 items-start">
+          <span class="w-5 h-5 rounded-full bg-brand flex items-center justify-center shrink-0 text-[10px] font-bold text-white mt-0.5">1</span>
+          <p class="text-sm text-gray-300">กดปุ่ม <strong class="text-white">⋯ (3 จุด)</strong> มุมขวาบนของ LINE</p>
+        </div>
+        <div class="flex gap-2.5 items-start">
+          <span class="w-5 h-5 rounded-full bg-brand flex items-center justify-center shrink-0 text-[10px] font-bold text-white mt-0.5">2</span>
+          <p class="text-sm text-gray-300">เลือก <strong class="text-white">"เปิดใน Browser"</strong> หรือ <strong class="text-white">"Open in Chrome"</strong></p>
+        </div>
+        <div class="flex gap-2.5 items-start">
+          <span class="w-5 h-5 rounded-full bg-brand flex items-center justify-center shrink-0 text-[10px] font-bold text-white mt-0.5">3</span>
+          <p class="text-sm text-gray-300">หน้าเว็บจะเปิดใน Chrome และใช้งานได้ปกติ</p>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500">หรือคัดลอก URL แล้ววางใน Chrome โดยตรง</p>
+    </div>
+  </div>
+
+  <script>
+    // Detect LINE / Facebook / Instagram in-app browsers immediately
+    (function () {
+      var ua = navigator.userAgent || '';
+      var isInApp = /Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) || /Instagram/i.test(ua);
+      if (isInApp) {
+        document.addEventListener('DOMContentLoaded', function () {
+          var el = document.getElementById('inapp-warning');
+          if (el) el.classList.remove('hidden');
+          if (window.lucide) lucide.createIcons();
+        });
+      }
+    })();
+  </script>
+
   <!-- Top Sticky Glass Header -->
   <header class="sticky top-0 z-40 w-full glass rounded-none border-t-0 border-x-0 bg-surface-page/80">
     <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
@@ -898,7 +942,16 @@
           _fs        = getFirestore(app);
           _auth      = getAuth(app);
           _messaging = getMessaging(app);
-          await signInAnonymously(_auth);
+          // Retry signInAnonymously up to 3 times with backoff
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              await signInAnonymously(_auth);
+              break;
+            } catch (authErr) {
+              if (attempt === 3) throw authErr;
+              await new Promise(r => setTimeout(r, attempt * 1500));
+            }
+          }
           _active = true;
           STATE_STORE.set('syncStatus', 'online');
           UI_RENDERER.showToast('⚡ เชื่อมต่อระบบคลาวด์เรียลไทม์แล้วค่ะ', 'success');

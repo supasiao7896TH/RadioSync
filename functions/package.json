@@ -1,6 +1,6 @@
 {
   "name": "radiosync-functions",
-  "description": "Cloud Functions for RadioSync PWA — push notifications",
+  "description": "Cloud Functions for PE1 Walkie Talkie Borrow PWA — push notifications",
   "engines": { "node": "20" },
   "main": "index.js",
   "scripts": {

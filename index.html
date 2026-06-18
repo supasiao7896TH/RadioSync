@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>A-Class RadioSync | ระบบยืม-คืนวิทยุและอุปกรณ์อัจฉริยะ</title>
+  <title>PE1 Walkie Talkie | ระบบยืม-คืนวิทยุสื่อสาร แผนกผลิต 1</title>
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="./manifest.json" />
@@ -161,7 +161,7 @@
           <i data-lucide="radio" class="w-5 h-5 text-brand-light"></i>
         </div>
         <div>
-          <h1 class="font-display font-semibold text-lg tracking-tight leading-none text-white">RadioSync</h1>
+          <h1 class="font-display font-semibold text-lg tracking-tight leading-none text-white">PE1 Walkie Talkie</h1>
           <span class="text-[10px] text-gray-400 tracking-wider uppercase font-medium">A-Class WebCraft</span>
         </div>
       </div>
@@ -824,7 +824,7 @@
     // ─────────────────────────────────────────────────────────────────────────
     const APP_CONFIG = (() => {
       return {
-        dbName:            'RadioSyncLocalDB',
+        dbName:            'PE1WalkieTalkieDB',
         dbVersion:         1,
         adminPinHashKey:   'radiosync_admin_pin_hash',
         adminLockoutKey:   'radiosync_admin_lockout',
@@ -2371,9 +2371,9 @@
             await CLOUD_SYNC_MANAGER.registerAdminToken();
             const _testOpts = { body: 'เปิดการแจ้งเตือนสำเร็จแล้วค่ะ ✅', icon: './icon-192.png', badge: './icon-192.png' };
             if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-              navigator.serviceWorker.ready.then(reg => reg.showNotification('RadioSync', _testOpts)).catch(() => {});
+              navigator.serviceWorker.ready.then(reg => reg.showNotification('PE1 Walkie Talkie', _testOpts)).catch(() => {});
             } else {
-              try { new Notification('RadioSync', _testOpts); } catch(e) {}
+              try { new Notification('PE1 Walkie Talkie', _testOpts); } catch(e) {}
             }
             UI_RENDERER.showToast('✅ เปิดการแจ้งเตือนสำเร็จแล้วค่ะ', 'success');
           } else {
@@ -2496,7 +2496,7 @@
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url  = URL.createObjectURL(blob);
             const a    = Object.assign(document.createElement('a'), {
-              href: url, download: `RadioSync_Report_${Date.now()}.csv`, style: 'display:none'
+              href: url, download: `PE1_WalkieTalkie_Report_${Date.now()}.csv`, style: 'display:none'
             });
             document.body.appendChild(a);
             a.click();

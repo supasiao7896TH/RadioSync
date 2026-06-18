@@ -17,26 +17,26 @@ const _fcm = firebase.messaging();
 
 // Handle FCM push when app is in background / closed
 _fcm.onBackgroundMessage(payload => {
-  const title = payload.notification?.title || 'RadioSync';
+  const title = payload.notification?.title || 'PE1 Walkie Talkie';
   const body  = payload.notification?.body  || '';
   self.registration.showNotification(title, {
     body,
     icon:  './icon-192.png',
     badge: './icon-192.png',
-    tag:   'radiosync-push',
+    tag:   'pe1wt-push',
     renotify: true,
-    data: { url: 'https://supasiao7896th.github.io/RadioSync/' },
+    data: { url: 'https://supasiao7896th.github.io/PE1-Walkie-Talkie-Borrow/' },
   });
 });
 
 // Open / focus the app when admin taps the notification
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const url = event.notification.data?.url || 'https://supasiao7896th.github.io/RadioSync/';
+  const url = event.notification.data?.url || 'https://supasiao7896th.github.io/PE1-Walkie-Talkie-Borrow/';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       for (const c of list) {
-        if (c.url.includes('RadioSync') && 'focus' in c) return c.focus();
+        if (c.url.includes('PE1-Walkie-Talkie-Borrow') && 'focus' in c) return c.focus();
       }
       return clients.openWindow(url);
     })
@@ -45,7 +45,7 @@ self.addEventListener('notificationclick', event => {
 
 // ─── App-shell cache ──────────────────────────────────────────────────────────
 
-const CACHE_NAME   = 'radiosync-v8';
+const CACHE_NAME   = 'pe1wt-v1';
 const STATIC_ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
